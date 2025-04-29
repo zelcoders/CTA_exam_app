@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+  <br><br><br>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    {% for message in messages %}
+    <p class="description" style="color:red;">{{ message }}</p>
+    {% endfor %}
+    {% else %}
+    <p class="description">Welcome <strong style="color:red">{{ user.first_name }}</strong>, Please select a course below to write the exam</p>
+    {% endif %}
+    {% endwith %}
+
+
+  <div class="card" >
+      <div class="card-header"><h3 class="text-center font-weight-light my-4">{{ title }}</h3></div>
+      {% for course in courses %}
+      <div class="card-body">
+          <p class="description">{{ course.id }}. {{ course.course_title }}
+              {% if is_instructor: %}<a href="{{ url_for('set_exam', course_code=course.course_code) }}" class="button">Set Exam</a>
+              {% else: %}<a href="{{ url_for('exam', course_code=course.course_code) }}" class="button">Write Exam</a>
+              {% endif %}</p>
+      </div>
+      {% endfor %}
+  </div>
+</div>
+<div class="container text-center add">
+<!--<a href="#" class="button">Add Movie</a>-->
+</div>
+
+{% endblock %}

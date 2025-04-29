@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% from 'bootstrap5/form.html' import render_form %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+  <br><br><br>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    {% for message in messages %}
+    <p class="description" style="color:red;">{{ message }}</p>
+    {% endfor %}
+    {% else %}
+    <p class="description">{{ description }}</p>
+    {% endif %}
+    {% endwith %}
+
+   
+  <div class="card" >
+      <div class="card-header"><h3 class="text-center font-weight-light my-4">{{ title }}</h3></div>
+      <div class="card-body">
+        {{ render_form(form, novalidate=True, button_style='danger') }}
+      </div>
+  </div>
+</div>
+<div class="container text-center add">
+<!--<a href="#" class="button">Add Movie</a>-->
+</div>
+
+{% endblock %}

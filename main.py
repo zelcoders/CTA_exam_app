@@ -300,7 +300,7 @@ def set_exam():
 
         return redirect(url_for("set_exam"))
 
-    return render_template("index.html", form=form)
+    return render_template("index.html", form=form, year=this_year, title=f"{course.course_title} Exam", course=course)
 
 
 # create a route for loading exam questions for a selected course

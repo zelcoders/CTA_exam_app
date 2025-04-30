@@ -11,7 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
 
-from forms import LoginForm, RegisterForm, CoursesForm, ExamQuestionsForm, LogoutForm
+from forms import LoginForm, RegisterForm, CoursesForm, ExamQuestionsForm
 from smtplib import SMTP_SSL
 import os
 # from dotenv import load_dotenv
@@ -222,10 +222,6 @@ def register():
 @app.route("/CTA/dashboard", methods=["GET", "POST"])
 @login_required
 def dashboard():
-    form = LogoutForm()
-
-    if form.validate_on_submit():
-        return redirect(url_for("logout"))
     # let it load courses to set exams for if the user is an instructor and load courses to write exam if user is a student
     courses = db.session.execute(db.select(Courses)).scalars().all()
     user = db.session.execute(db.select(User).where(User.id == current_user.id)).scalar()
@@ -236,7 +232,7 @@ def dashboard():
             is_instructor = True
             courses = db.session.execute(db.select(Courses).where(course.instructor_id == user.id)).scalars().all()
 
-    return render_template("dashboard.html", courses=courses, user=user, title="Courses", is_instructor=is_instructor, year=this_year, form=form)
+    return render_template("dashboard.html", courses=courses, user=user, title="Courses", is_instructor=is_instructor, year=this_year)
 
 
 @app.route("/CTA/add_course", methods=["GET", "POST"])

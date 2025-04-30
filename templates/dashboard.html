@@ -6,8 +6,8 @@
 
 <div class="container">
 
-  <br><br><br>
-{{ render_form(form, novalidate=True, button_style='danger') }}
+  <br><br><br><a href="{{ url_for('logout') }}" class="button">Logout</a>
+
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     {% for message in messages %}

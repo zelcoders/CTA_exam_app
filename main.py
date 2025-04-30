@@ -219,10 +219,13 @@ def register():
 
 # make dashboard route require login
 
-@app.route("/CTA/dashboard")
+@app.route("/CTA/dashboard", methods=["GET", "POST"])
 @login_required
 def dashboard():
     form = LogoutForm()
+
+    if form.validate_on_submit():
+        return redirect(url_for("logout"))
     # let it load courses to set exams for if the user is an instructor and load courses to write exam if user is a student
     courses = db.session.execute(db.select(Courses)).scalars().all()
     user = db.session.execute(db.select(User).where(User.id == current_user.id)).scalar()

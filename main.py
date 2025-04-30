@@ -66,7 +66,7 @@ class User(UserMixin, db.Model):
     surname: Mapped[str] = mapped_column(String(50), nullable=False)
     first_name: Mapped[str] = mapped_column(String(50), nullable=False)
     username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
-    passcode: Mapped[str] = mapped_column(String(50), nullable=False)
+    passcode: Mapped[str] = mapped_column(String(500), nullable=False)
     branch: Mapped[str] = mapped_column(String(50), nullable=False)
     user_type: Mapped[str] = mapped_column(String(50), nullable=False)
 

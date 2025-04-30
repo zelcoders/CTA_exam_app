@@ -11,7 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
 
-from forms import LoginForm, RegisterForm, CoursesForm, ExamQuestionsForm
+from forms import LoginForm, RegisterForm, CoursesForm, ExamQuestionsForm, LogoutForm
 from smtplib import SMTP_SSL
 import os
 # from dotenv import load_dotenv
@@ -52,7 +52,7 @@ def load_user(user_id):
 class Base(DeclarativeBase):
     pass
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DB_URI")
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DB_URI", "sqlite:///exam.db")
 
 db = SQLAlchemy(model_class=Base)
 
@@ -158,7 +158,7 @@ def instructor_only(f):
     return new_decorated_function
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/CTA/", methods=["GET", "POST"])
 def home():
     form = LoginForm()
     if form.validate_on_submit():
@@ -178,7 +178,7 @@ def home():
 
 
 # Create register route
-@app.route("/register", methods=["GET", "POST"])
+@app.route("/CTA/register", methods=["GET", "POST"])
 @admin_only
 def register():
     form = RegisterForm()
@@ -219,10 +219,11 @@ def register():
 
 # make dashboard route require login
 
-@app.route("/dashboard")
+@app.route("/CTA/dashboard")
 @login_required
 def dashboard():
-    # let it load courses to set exams for if user is an instructor and load courses to write exam if user is a student
+    form = LogoutForm()
+    # let it load courses to set exams for if the user is an instructor and load courses to write exam if user is a student
     courses = db.session.execute(db.select(Courses)).scalars().all()
     user = db.session.execute(db.select(User).where(User.id == current_user.id)).scalar()
 
@@ -232,10 +233,10 @@ def dashboard():
             is_instructor = True
             courses = db.session.execute(db.select(Courses).where(course.instructor_id == user.id)).scalars().all()
 
-    return render_template("dashboard.html", courses=courses, user=user, title="Courses", is_instructor=is_instructor, year=this_year)
+    return render_template("dashboard.html", courses=courses, user=user, title="Courses", is_instructor=is_instructor, year=this_year, form=form)
 
 
-@app.route("/add_course", methods=["GET", "POST"])
+@app.route("/CTA/add_course", methods=["GET", "POST"])
 @admin_only
 def add_course():
     form = CoursesForm()
@@ -262,7 +263,7 @@ def add_course():
     return render_template("index.html", form=form, title="Register New Course", year=this_year)
 
 # create a route for setting exam questions loading the question form
-@app.route("/set_exam_questions", methods=["GET", "POST"])
+@app.route("/CTA/set_exam_questions", methods=["GET", "POST"])
 @instructor_only
 def set_exam():
     course_code = request.args.get("course_code")
@@ -300,7 +301,7 @@ def set_exam():
 
 
 # create a route for loading exam questions for a selected course
-@app.route("/exam", methods=["GET", "POST"])
+@app.route("/CTA/exam", methods=["GET", "POST"])
 @login_required
 def exam():
     course_code = request.args.get("course_code")
@@ -381,7 +382,7 @@ def exam():
     return render_template("exams.html", questions=exam_dict, year=this_year, title=f"{course.course_title} Exam", course=course)
 
 
-@app.route("/result")
+@app.route("/CTA/result")
 @login_required
 def check_result():
     course_code = request.args.get("course_code")
@@ -400,7 +401,7 @@ def check_result():
     return render_template("result.html", title=f"{course.course_title} Results", results=results, score=score_percent, remark=remark)
 
 
-@app.route("/logout")
+@app.route("/CTA/logout")
 def logout():
     logout_user()
     return redirect(url_for('home'))

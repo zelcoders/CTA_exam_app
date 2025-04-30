@@ -36,3 +36,7 @@ class LoginForm(FlaskForm):
     passcode = PasswordField("Passcode", validators=[DataRequired(), Length(min=6, max=6, message="Your Passcode must be 6 digit")])
     submit = SubmitField("Submit")
 
+
+class LogoutForm(FlaskForm):
+    submit = SubmitField("Logout")
+

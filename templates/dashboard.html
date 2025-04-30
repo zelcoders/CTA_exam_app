@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'bootstrap5/form.html' import render_form %}
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
@@ -6,6 +7,7 @@
 <div class="container">
 
   <br><br><br>
+{{ render_form(form, novalidate=True, button_style='danger') }}
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     {% for message in messages %}

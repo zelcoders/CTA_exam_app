@@ -21,14 +21,16 @@
 
   <div class="card" >
       <div class="card-header"><h3 class="text-center font-weight-light my-4">{{ title }}</h3></div>
-      {% for course in courses %}
+
       <div class="card-body">
+          {% for course in courses %}
           <p class="description">{{ course.id }}. {{ course.course_title }}
               {% if is_instructor: %}<a href="{{ url_for('set_exam', course_code=course.course_code) }}" class="button">Set Exam</a>
               {% else: %}<a href="{{ url_for('exam', course_code=course.course_code) }}" class="button">Write Exam</a>
               {% endif %}</p>
+          {% endfor %}
       </div>
-      {% endfor %}
+
   </div>
 </div>
 <div class="container text-center add">

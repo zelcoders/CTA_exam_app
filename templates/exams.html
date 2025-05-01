@@ -19,7 +19,12 @@
 
    
   <div class="card" >
-      <div class="card-header"><h3 class="text-center font-weight-light my-4">{{ title }}</h3></div>
+      <div class="card-header" style="position:sticky; top:0;">
+          <h3 class="text-center font-weight-light my-4">{{ title }}</h3>
+          <div id="countdown">
+              <strong>Duration: <span id="minutes" style="color:green"></span>:<span id="seconds" style="color:green"></span></strong>
+          </div>
+      </div>
       <div class="card-body">
           <form method="post" action="{{ url_for('exam', course_code=course.course_code) }}">
               {% for question in questions %}
@@ -29,13 +34,48 @@
               {% endfor %}
               <br><br>
               {% endfor %}
-              <button type="submit">Submit</button>
+              <button type="submit" id="myButton">Submit</button>
           </form>
       </div>
   </div>
 </div>
 <div class="container text-center add">
-<a href="{{ url_for('dashboard') }}" class="button">Back to Dasboard</a>
+<!--<a href="{{ url_for('dashboard') }}" class="button">Back to Dasboard</a>-->
 </div>
 
+<script>
+    function startTimer(durationInMinutes) {
+        let timer = durationInMinutes * 60;
+        const minutesDisplay = document.getElementById('minutes');
+        const secondsDisplay = document.getElementById('seconds');
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timer / 60);
+            const seconds = timer % 60;
+            minutesDisplay.textContent = String(minutes).padStart(2, '0');
+            secondsDisplay.textContent = String(seconds).padStart(2, '0');
+
+            if (timer < 300) {
+                minutesDisplay.setAttribute("style", "color:red")
+                secondsDisplay.setAttribute("style", "color:red")
+            }
+
+            if (timer <= 0) {
+                clearInterval(interval);
+                minutesDisplay.textContent = "00";
+                secondsDisplay.textContent = "00";
+
+                const button = document.getElementById('myButton');
+                button.click();
+                return;
+            }
+            timer--;
+        }
+
+        updateTimerDisplay();
+        const interval = setInterval(updateTimerDisplay, 1000);
+    }
+
+    startTimer(5.5);
+</script>
 {% endblock %}

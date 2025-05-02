@@ -30,7 +30,7 @@
           {% for course in courses %}
           <p class="description">{{ course.id }}. {{ course.course_title }}
               {% if is_instructor: %}<a href="{{ url_for('set_exam', course_code=course.course_code) }}" class="button">Set Exam</a>
-              {% else: %}<a href="{{ url_for('exam', course_code=course.course_code) }}" class="button">Write Exam</a>
+              {% else: %}<a href="{{ url_for('instruction', course_code=course.course_code) }}" class="button">Write Exam</a>
               {% endif %}</p>
           {% endfor %}
       </div>

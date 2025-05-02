@@ -306,10 +306,24 @@ def exam():
     course_code = request.args.get("course_code")
     course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
 
-    score = db.session.execute(db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id, Scores.remark == "Pass")).scalar()
+    score = db.session.execute(db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id,
+                                                       Scores.remark == "Pass")).scalar()
+    score_fail = db.session.execute(db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id,
+                                                        Scores.remark == "Fail")).scalar()
 
-    if score:
+    if score or score_fail:
         return redirect(url_for('check_result', course_code=course_code))
+
+
+    new_score = Scores()
+    new_score.user_id = current_user.id
+    new_score.course_id = course.id
+    new_score.year = str(this_year)
+    new_score.score = 0
+    new_score.remark = "Fail"
+
+    db.session.add(new_score)
+    db.session.commit()
 
     exam_questions = db.session.execute(db.select(Questions).where(Questions.course_id == course.id)).scalars().all()
 
@@ -363,17 +377,14 @@ def exam():
             if result.selected_answer == result.correct_answer:
                 student_score += 1
 
-        new_score = Scores()
-        new_score.user_id = user_id
-        new_score.course_id = course_id
-        new_score.year = str(this_year)
-        new_score.score = student_score
-        if student_score > len(exam_questions)/2:
-            new_score.remark = "Pass"
-        else:
-            new_score.remark = "Retake"
+        exam_score = db.session.execute(db.select(Scores).where(Scores.user_id == current_user.id, Scores.course_id == course.id)).scalar()
 
-        db.session.add(new_score)
+        exam_score.score = student_score
+        if student_score > len(exam_questions)/2:
+            exam_score.remark = "Pass"
+        else:
+            exam_score.remark = "Retake"
+
         db.session.commit()
 
         return redirect(url_for('check_result', course_code=course_code))
@@ -404,6 +415,13 @@ def check_result():
 def logout():
     logout_user()
     return redirect(url_for('home'))
+
+
+@app.route("/CTA/instruction")
+def instruction():
+    course_code = request.args.get("course_code")
+    course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
+    return render_template("instruction.html", title="Instructions", course=course)
 
 
 if __name__ == '__main__':

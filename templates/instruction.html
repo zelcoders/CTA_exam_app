@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% from 'bootstrap5/form.html' import render_form %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+  <br><br><br>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    {% for message in messages %}
+    <p class="description" style="color:red;">{{ message }}</p>
+    {% endfor %}
+    {% else %}
+    <p class="description">{{ description }}</p>
+    {% endif %}
+    {% endwith %}
+
+    <div class="card" >
+      <div class="card-header"><h4 class="text-center font-weight-light my-4">{{ title }}</h4></div>
+      <div class="card-body">
+          <p>1. Do NOT refresh the Examination page at any point during the Exam.</p>
+          <p>2. Do NOT close the Tab during the Exam.</p>
+          <p>3. Ensure that You read each Question carefully before selecting an option.</p>
+          <p>4. The duration for this Exam is 20 minutes.</p>
+          <p>5. Once You run out of time, your answers will automatically be submitted.</p>
+          <p>6. Once You are ready, click on the "Proceed to Examination" button below.</p>
+      </div>
+  </div>
+</div>
+<div class="container text-center add">
+<a href="{{ url_for('exam', course_code=course.course_code) }}" class="button">Proceed to Examination.</a>
+</div>
+
+{% endblock %}

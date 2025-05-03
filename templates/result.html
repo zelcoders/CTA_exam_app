@@ -21,7 +21,9 @@
       <div class="card-header"><h4 class="text-center font-weight-light my-4">{{ title }}</h4></div>
       <div class="card-body">
           {% if not results: %}
-          <p><span style="font-style:italic;"><strong>Results not found for this course. If you have not written the exam. Kindly go to your dashboard and write exam instead.</strong></span></p>
+          <p><span style="font-style:italic;"><strong>Results not found for this course.<br>You are seeing this message
+              either because you have not written the exam, you refreshed the exam page, or you exited the exam page
+              before submitting. Kindly go to your dashboard and click 'write exam' or contact Admin to reset the exam page.</strong></span></p>
           {% else: %}
             {% for result in results: %}
           <p><span style="font-style:italic;"><strong>Question: {{ result.question.question }}</strong></span><br>

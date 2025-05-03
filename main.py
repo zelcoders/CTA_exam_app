@@ -294,7 +294,7 @@ def set_exam():
         db.session.add(new_question)
         db.session.commit()
 
-        return redirect(url_for("set_exam"))
+        return redirect(url_for("set_exam", course_code=course_code))
 
     return render_template("index.html", form=form, year=this_year, title=f"{course.course_title} Exam", course=course)
 
@@ -305,25 +305,6 @@ def set_exam():
 def exam():
     course_code = request.args.get("course_code")
     course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
-
-    score = db.session.execute(db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id,
-                                                       Scores.remark == "Pass")).scalar()
-    score_fail = db.session.execute(db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id,
-                                                        Scores.remark == "Fail")).scalar()
-
-    if score or score_fail:
-        return redirect(url_for('check_result', course_code=course_code))
-
-
-    new_score = Scores()
-    new_score.user_id = current_user.id
-    new_score.course_id = course.id
-    new_score.year = str(this_year)
-    new_score.score = 0
-    new_score.remark = "Fail"
-
-    db.session.add(new_score)
-    db.session.commit()
 
     exam_questions = db.session.execute(db.select(Questions).where(Questions.course_id == course.id)).scalars().all()
 
@@ -339,6 +320,7 @@ def exam():
             "options": options
         }
         exam_dict.append(new_question)
+
 
     if request.method == "POST":
         course_id = course.id
@@ -356,7 +338,10 @@ def exam():
                 db.session.commit()
 
         for i in range(len(exam_dict)):
-            selected_answer = request.form.get(f"question_{i+1}")
+            if request.form.get(f"question_{i+1}") is None:
+                selected_answer = "Not answered"
+            else:
+                selected_answer = request.form.get(f"question_{i+1}")
             correct_option = exam_dict[i]["correct_option"]
             question_id = exam_dict[i]["question_id"]
 
@@ -366,8 +351,8 @@ def exam():
             new_result.question_id = question_id
             new_result.selected_answer = selected_answer
             new_result.correct_answer = correct_option
-            db.session.add(new_result)
 
+            db.session.add(new_result)
             db.session.commit()
 
         score_calc = db.session.execute(db.select(Results).where(Results.user_id == current_user.id, Results.course_id == course.id)).scalars().all()
@@ -388,6 +373,25 @@ def exam():
         db.session.commit()
 
         return redirect(url_for('check_result', course_code=course_code))
+
+    score = db.session.execute(db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id,
+                                                       Scores.remark == "Pass")).scalar()
+    score_fail = db.session.execute(db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id,
+                                                        Scores.remark == "Fail")).scalar()
+
+    if score or score_fail:
+        return redirect(url_for('check_result', course_code=course_code))
+
+
+    new_score = Scores()
+    new_score.user_id = current_user.id
+    new_score.course_id = course.id
+    new_score.year = str(this_year)
+    new_score.score = 0
+    new_score.remark = "Fail"
+
+    db.session.add(new_score)
+    db.session.commit()
 
     return render_template("exams.html", questions=exam_dict, year=this_year, title=f"{course.course_title} Exam", course=course)
 
@@ -418,10 +422,11 @@ def logout():
 
 
 @app.route("/CTA/instruction")
+@login_required
 def instruction():
     course_code = request.args.get("course_code")
     course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
-    return render_template("instruction.html", title="Instructions", course=course)
+    return render_template("instruction.html", title=f"{course.course_title} Exam Instructions", course=course)
 
 
 if __name__ == '__main__':

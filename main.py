@@ -65,7 +65,7 @@ class User(UserMixin, db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     surname: Mapped[str] = mapped_column(String(50), nullable=False)
     first_name: Mapped[str] = mapped_column(String(50), nullable=False)
-    username: Mapped[str] = mapped_column(String(50), nullable=False)
+    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     passcode: Mapped[str] = mapped_column(String(500), nullable=False)
     branch: Mapped[str] = mapped_column(String(50), nullable=False)
     user_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -185,10 +185,10 @@ def register():
     if form.validate_on_submit():
         surname = form.surname.data.title()
         first_name = form.first_name.data.title()
-        username = f"{first_name[0]}{surname}"
+        username = f"{first_name[0].lower()}{surname.lower()}"
         users = db.session.execute(db.select(User).where(User.username.startswith(username))).scalars().all()
         if users:
-            username = f"{first_name[0]}{surname}{len(users)}"
+            username = f"{first_name[0].lower()}{surname.lower()}{len(users)}"
         passcode = random.randint(100000, 999999)
         hashed_passcode = generate_password_hash(str(passcode), method='pbkdf2:sha256', salt_length=random.randint(8, 10))
         branch = form.branch.data

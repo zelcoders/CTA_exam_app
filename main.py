@@ -65,7 +65,7 @@ class User(UserMixin, db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     surname: Mapped[str] = mapped_column(String(50), nullable=False)
     first_name: Mapped[str] = mapped_column(String(50), nullable=False)
-    username: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(50), nullable=False)
     passcode: Mapped[str] = mapped_column(String(500), nullable=False)
     branch: Mapped[str] = mapped_column(String(50), nullable=False)
     user_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -89,7 +89,7 @@ class Courses(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     course_code: Mapped[str] = mapped_column(String(200), nullable=False)
     course_title: Mapped[str] = mapped_column(String(500), nullable=False)
-    course_description: Mapped[str] = mapped_column(String(1000), unique=True, nullable=True)
+    course_description: Mapped[str] = mapped_column(String(1000), nullable=True)
     instructor_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("user.id"))
 
     results = relationship("Results", back_populates="course")
@@ -188,7 +188,7 @@ def register():
         username = f"{first_name[0]}{surname}"
         users = db.session.execute(db.select(User).where(User.username.startswith(username))).scalars().all()
         if users:
-            username += f"{len(users)}"
+            username = f"{first_name[0]}{surname}{len(users)}"
         passcode = random.randint(100000, 999999)
         hashed_passcode = generate_password_hash(str(passcode), method='pbkdf2:sha256', salt_length=random.randint(8, 10))
         branch = form.branch.data

@@ -78,7 +78,7 @@ class Questions(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     question: Mapped[str] = mapped_column(String(1000), nullable=False)
     options: Mapped[str] = mapped_column(String(500), nullable=False)
-    correct_option: Mapped[str] = mapped_column(String(500), unique=True, nullable=False)
+    correct_option: Mapped[str] = mapped_column(String(500), nullable=False)
     course_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("courses.id"))
 
     results = relationship("Results", back_populates="question")

@@ -230,7 +230,8 @@ def dashboard():
     for course in courses:
         if user.id == course.instructor_id:
             is_instructor = True
-            courses = db.session.execute(db.select(Courses).where(course.instructor_id == user.id)).scalars().all()
+    if is_instructor:
+        courses = db.session.execute(db.select(Courses).where(Courses.instructor_id == user.id)).scalars().all()
 
     return render_template("dashboard.html", courses=courses, user=user, title="Courses", is_instructor=is_instructor, year=this_year)
 

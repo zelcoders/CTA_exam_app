@@ -29,7 +29,7 @@
 
       <div class="card-body">
           {% for course in courses %}
-          <p class="description">{{ course.id }}. {{ course.course_title }}<br>
+          <p class="description">{{ course.course_code }}. {{ course.course_title }}<br>
               {% if is_instructor: %}<a href="{{ url_for('set_exam', course_code=course.course_code) }}" class="button">Set Exam</a>
               {% else: %}<a href="{{ url_for('instruction', course_code=course.course_code) }}" class="button">Write Exam</a>
               {% endif %}</p>

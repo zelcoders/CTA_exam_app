@@ -224,7 +224,7 @@ def register():
 @login_required
 def dashboard():
     # let it load courses to set exams for if the user is an instructor and load courses to write exam if user is a student
-    courses = db.session.execute(db.select(Courses)).scalars().all()
+    courses = db.session.execute(db.select(Courses).order_by(Courses.course_title)).scalars().all()
     user = db.session.execute(db.select(User).where(User.id == current_user.id)).scalar()
 
     is_instructor = False
@@ -232,7 +232,7 @@ def dashboard():
         if user.id == course.instructor_id:
             is_instructor = True
     if is_instructor:
-        courses = db.session.execute(db.select(Courses).where(Courses.instructor_id == user.id)).scalars().all()
+        courses = db.session.execute(db.select(Courses).where(Courses.instructor_id == user.id).order_by(Courses.course_title)).scalars().all()
 
     return render_template("dashboard.html", courses=courses, user=user, title="Courses", is_instructor=is_instructor, year=this_year)
 

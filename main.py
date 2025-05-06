@@ -1,7 +1,8 @@
 from datetime import datetime
 import random
+import pandas as pd
 
-from flask import Flask, render_template, redirect, url_for, request, flash, abort
+from flask import Flask, render_template, redirect, url_for, request, flash, abort, send_from_directory
 from flask_bootstrap import Bootstrap5
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -428,6 +429,40 @@ def instruction():
     course_code = request.args.get("course_code")
     course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
     return render_template("instruction.html", title=f"{course.course_title} Exam Instructions", course=course)
+
+
+@app.route("/CTA/scores")
+@admin_only
+def download_scores():
+    all_scores = db.session.execute(db.select(Scores)).scalars().all()
+    course_list = []
+    user_id_list = []
+    user_surname_list = []
+    user_first_name_list = []
+    year_list = []
+    score_list = []
+    remark_list = []
+    for score in all_scores:
+        user_id_list.append(score.user_id)
+        user_surname_list.append(score.user.surname)
+        user_first_name_list.append(score.user.first_name)
+        year_list.append(score.year)
+        course_list.append(score.course.course_title)
+        score_list.append(score.score)
+        remark_list.append(score.remark)
+    scores_dict = {
+        "Course": course_list,
+        "User ID": user_id_list,
+        "Surname": user_surname_list,
+        "First Name": user_first_name_list,
+        "Year": year_list,
+        "Score": score_list,
+        "Remark": remark_list
+    }
+    scores_df = pd.DataFrame(scores_dict)
+    scores_df.to_csv("static/scores.csv", index=False)
+
+    return send_from_directory('static', path="scores.csv")
 
 
 if __name__ == '__main__':

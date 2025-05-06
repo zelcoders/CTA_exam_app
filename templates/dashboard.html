@@ -10,6 +10,7 @@
     {% if current_user.user_type == "Admin": %}
     <a href="{{ url_for('add_course') }}" class="button">Add Course</a>
     <a href="{{ url_for('register') }}" class="button">Register</a>
+    <a href="{{ url_for('download_scores') }}" class="button">Download Scores</a>
     {% endif %}
 
     {% with messages = get_flashed_messages() %}

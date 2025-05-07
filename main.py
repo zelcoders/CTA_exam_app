@@ -370,7 +370,7 @@ def exam():
         if student_score > len(exam_questions)/2:
             exam_score.remark = "Pass"
         else:
-            exam_score.remark = "Retake"
+            exam_score.remark = "Fail"
 
         db.session.commit()
 

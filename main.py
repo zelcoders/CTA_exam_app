@@ -366,7 +366,7 @@ def exam():
 
         exam_score = db.session.execute(db.select(Scores).where(Scores.user_id == current_user.id, Scores.course_id == course.id)).scalar()
 
-        exam_score.score = student_score
+        exam_score.score = (student_score/len(exam_dict)) * 100
         if student_score > len(exam_questions)/2:
             exam_score.remark = "Pass"
         else:
@@ -406,9 +406,8 @@ def check_result():
 
     results = db.session.execute(db.select(Results).where(Results.course_id == course.id, Results.user_id == current_user.id)).scalars().all()
 
-    exam_questions = db.session.execute(db.select(Questions).where(Questions.course_id == course.id)).scalars().all()
     score = db.session.execute(db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id)).scalar()
-    score_percent = round((score.score/len(exam_questions))*100)
+    score_percent = round(score.score)
     if score_percent > 50:
         remark = "Congratulations! You have passed this course"
     else:

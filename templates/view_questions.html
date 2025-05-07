@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% from 'bootstrap5/form.html' import render_form %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+
+<div class="container">
+
+  <br><br><br>
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    {% for message in messages %}
+    <p class="description" style="color:red;">{{ message }}</p>
+    {% endfor %}
+    {% else %}
+    <p class="description">{{ description }}</p>
+    {% endif %}
+    {% endwith %}
+
+    <div class="card" >
+      <div class="card-header"><h4 class="text-center font-weight-light my-4">{{ title }}</h4></div>
+      <div class="card-body">
+          {% for question in questions: %}
+          <p>{{ question['question_no'] }}. {{ question['question'] }}<br>
+          Correct Option: {{ question['correct_option'] }}<br>
+          {% for option in question['options'][1:]: %}
+              Wrong Option: {{ option }}<br>
+          {% endfor %}
+          <a href="{{ url_for('edit_question', q_id=question['question_id'], course_code=course.course_code) }}">Edit Question</a></p>
+          {% endfor %}
+      </div>
+  </div>
+</div>
+<div class="container text-center add">
+<a href="{{ url_for('exam', course_code=course.course_code) }}" class="button">Proceed to Examination.</a>
+</div>
+
+{% endblock %}

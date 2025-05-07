@@ -223,7 +223,7 @@ def register():
 @app.route("/CTA/dashboard", methods=["GET", "POST"])
 @login_required
 def dashboard():
-    # let it load courses to set exams for if the user is an instructor and load courses to write exam if user is a student
+    # let it load courses to set exams for if the user is an instructor and load courses to write exam if the user is a student
     courses = db.session.execute(db.select(Courses).order_by(Courses.course_title)).scalars().all()
     user = db.session.execute(db.select(User).where(User.id == current_user.id)).scalar()
 
@@ -463,6 +463,74 @@ def download_scores():
     scores_df.to_csv("static/scores.csv", index=False)
 
     return send_from_directory('static', path="scores.csv")
+
+
+@app.route("/CTA/view_questions")
+@instructor_only
+def view_questions():
+    course_code = request.args.get("course_code")
+    course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
+    questions = db.session.execute(db.select(Questions).where(Questions.course_id == course.id)).scalars().all()
+
+    exam_dict = []
+    for question in questions:
+        options = question.options.split(";")
+        new_question = {
+            "question_no": questions.index(question) + 1,
+            "question_id": question.id,
+            "question": question.question,
+            "correct_option": question.correct_option,
+            "options": options
+        }
+        exam_dict.append(new_question)
+    return render_template("view_questions.html", title=f"{course.course_title} Questions", questions=exam_dict, course=course)
+
+
+@app.route("/CTA/edit_question", methods=["GET", "POST"])
+@instructor_only
+def edit_question():
+    q_id = request.args.get("q_id")
+    question = db.session.execute(db.select(Questions).where(Questions.id == q_id)).scalar()
+    course_code = request.args.get("course_code")
+    course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
+    options = question.options.split(";")
+    form = ExamQuestionsForm(
+        questions=question.question,
+        correct_answer=question.correct_option,
+        wrong_answer1=question.options.split(";")[1],
+    )
+    for i in range(len(options)):
+        if i == 2:
+            form.wrong_answer2.data = question.options.split(";")[2]
+        elif i == 3:
+            form.wrong_answer3.data = question.options.split(";")[3]
+        elif i == 4:
+            form.wrong_answer4.data = question.options.split(";")[4]
+    form.submit.label.text = "Update Question"
+    if form.validate_on_submit():
+        updated_correct_option = form.correct_answer.data
+        updated_options = ""
+        updated_options += f"{updated_correct_option}"
+        wrong_option1 = form.wrong_answer1.data
+        updated_options += f";{wrong_option1}"
+        if form.wrong_answer2.data != "":
+            wrong_option2 = form.wrong_answer2.data
+            updated_options += f";{wrong_option2}"
+        if form.wrong_answer3.data != "":
+            wrong_option3 = form.wrong_answer3.data
+            updated_options += f";{wrong_option3}"
+        if form.wrong_answer4.data != "":
+            wrong_option4 = form.wrong_answer4.data
+            updated_options += f";{wrong_option4}"
+
+        question.question = form.questions.data
+        question.correct_option = updated_correct_option
+        question.options = updated_options
+
+        db.session.commit()
+        return redirect(url_for("view_questions", course_code=course_code))
+    return render_template("index.html", form=form, year=this_year, title=f"{course.course_title} Exam",
+                               course=course)
 
 
 if __name__ == '__main__':

@@ -329,6 +329,10 @@ def exam():
         user_id = current_user.id
 
         results = db.session.execute(db.select(Results).where(Results.user_id == user_id, Results.course_id == course_id)).scalars().all()
+        score = db.session.execute(db.select(Scores).where(Scores.user_id == user_id, Scores.course_id == course_id)).scalar()
+
+        if score.score > 0 and score.remark != "Retake":
+            return redirect(url_for('check_result', course_code=course_code))
 
         if results:
             for result in results:

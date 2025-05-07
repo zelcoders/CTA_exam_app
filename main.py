@@ -514,13 +514,13 @@ def edit_question():
         wrong_option1 = form.wrong_answer1.data
         updated_options += f";{wrong_option1}"
         if form.wrong_answer2.data != "":
-            wrong_option2 = form.wrong_answer2.data
+            wrong_option2 = request.form.get("wrong_answer2")
             updated_options += f";{wrong_option2}"
         if form.wrong_answer3.data != "":
-            wrong_option3 = form.wrong_answer3.data
+            wrong_option3 = request.form.get("wrong_answer3")
             updated_options += f";{wrong_option3}"
         if form.wrong_answer4.data != "":
-            wrong_option4 = form.wrong_answer4.data
+            wrong_option4 = request.form.get("wrong_answer4")
             updated_options += f";{wrong_option4}"
 
         question.question = form.questions.data

@@ -533,5 +533,17 @@ def edit_question():
                                course=course)
 
 
+@app.route("/CTA/delete_question")
+@instructor_only
+def delete_question():
+    q_id = request.args.get("q_id")
+    question = db.session.execute(db.select(Questions).where(Questions.id == q_id)).scalar()
+    course_code = request.args.get("course_code")
+    course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
+    db.session.delete(question)
+    db.session.commit()
+    return redirect(url_for("view_questions", course_code=course_code))
+
+
 if __name__ == '__main__':
     app.run(debug=True)

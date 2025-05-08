@@ -379,7 +379,7 @@ def exam():
         exam_score = db.session.execute(db.select(Scores).where(Scores.user_id == current_user.id, Scores.course_id == course.id)).scalar()
 
         exam_score.score = (student_score/len(exam_dict)) * 100
-        if student_score > len(exam_questions)/2:
+        if student_score >= len(exam_questions)/2:
             exam_score.remark = "Pass"
         else:
             exam_score.remark = "Fail"

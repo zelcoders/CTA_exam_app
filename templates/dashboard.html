@@ -32,7 +32,10 @@
           <p class="description">{{ course.course_code }}. {{ course.course_title }}<br>
               {% if is_instructor: %}<a href="{{ url_for('set_exam', course_code=course.course_code) }}" class="button">Set Exam</a>
               <a href="{{ url_for('view_questions', course_code=course.course_code) }}" class="button">View Questions</a>
-              {% else: %}<a href="{{ url_for('instruction', course_code=course.course_code) }}" class="button">Write Exam</a>
+              {% else: %}
+              {% if is_exam[course.id]: %}
+              <a href="{{ url_for('instruction', course_code=course.course_code) }}" class="button">Write Exam</a>
+              {% endif %}
               {% endif %}</p>
           {% endfor %}
       </div>

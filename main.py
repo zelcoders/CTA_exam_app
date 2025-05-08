@@ -234,7 +234,15 @@ def dashboard():
     if is_instructor:
         courses = db.session.execute(db.select(Courses).where(Courses.instructor_id == user.id).order_by(Courses.course_title)).scalars().all()
 
-    return render_template("dashboard.html", courses=courses, user=user, title="Courses", is_instructor=is_instructor, year=this_year)
+    is_exam = {}
+    for course in courses:
+        exam_questions = db.session.execute(db.select(Questions).where(Questions.course_id == course.id)).scalars().all()
+        if exam_questions:
+            is_exam[course.id] = True
+        else:
+            is_exam[course.id] = False
+
+    return render_template("dashboard.html", courses=courses, user=user, title="Courses", is_instructor=is_instructor, year=this_year, is_exam=is_exam)
 
 
 @app.route("/CTA/add_course", methods=["GET", "POST"])

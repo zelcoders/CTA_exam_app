@@ -446,6 +446,7 @@ def instruction():
 @admin_only
 def download_scores():
     all_scores = db.session.execute(db.select(Scores)).scalars().all()
+    score_id_list = []
     course_list = []
     user_id_list = []
     user_surname_list = []
@@ -454,6 +455,7 @@ def download_scores():
     score_list = []
     remark_list = []
     for score in all_scores:
+        score_id_list.append(score.id)
         user_id_list.append(score.user_id)
         user_surname_list.append(score.user.surname)
         user_first_name_list.append(score.user.first_name)
@@ -462,6 +464,7 @@ def download_scores():
         score_list.append(score.score)
         remark_list.append(score.remark)
     scores_dict = {
+        "Score ID": score_id_list,
         "Course": course_list,
         "User ID": user_id_list,
         "Surname": user_surname_list,

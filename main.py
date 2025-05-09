@@ -572,5 +572,30 @@ def reset_score():
         return redirect(url_for("dashboard"))
     return render_template("index.html", form=form, title="Reset Student Score", year=this_year)
 
+
+@app.route("/CTA/edit_course", methods=["GET", "POST"])
+@admin_only
+def edit_course():
+    course_code = request.args.get("course_code")
+    course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
+    form = CoursesForm(
+        course_code=course.course_code,
+        course_title=course.course_title,
+        course_description=course.course_description,
+        instructor_username=course.instructor.username
+    )
+
+    if form.validate_on_submit():
+        course.course_code = form.course_code.data
+        course.course_title = form.course_title.data
+        course.course_description = form.course_description.data
+        instructor_username = form.instructor_username.data
+        instructor = db.session.execute(db.select(User).where(User.username == instructor_username)).scalar()
+        course.instructor_id = instructor.id
+
+        db.session.commit()
+        return redirect(url_for("dashboard"))
+    return render_template("index.html", form=form, title="Edit Course", year=this_year)
+
 if __name__ == '__main__':
     app.run(debug=True)

@@ -12,7 +12,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import requests
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
 
-from forms import LoginForm, RegisterForm, CoursesForm, ExamQuestionsForm
+from forms import LoginForm, RegisterForm, CoursesForm, ExamQuestionsForm, ResetStudentScoreForm
 from smtplib import SMTP_SSL
 import os
 # from dotenv import load_dotenv
@@ -555,6 +555,19 @@ def delete_question():
     db.session.commit()
     return redirect(url_for("view_questions", course_code=course_code))
 
+
+@app.route("/CTA/reset_score", methods=["GET", "POST"])
+@admin_only
+def reset_score():
+    form = ResetStudentScoreForm()
+
+    if form.validate_on_submit():
+        score_id = form.score_id.data
+        score = db.session.execute(db.select(Scores).where(Scores.id == score_id)).scalar()
+        score.remark = "Retake"
+        db.session.commit()
+        return redirect(url_for("dashboard"))
+    return render_template("index.html", form=form, title="Reset Student Score", year=this_year)
 
 if __name__ == '__main__':
     app.run(debug=True)

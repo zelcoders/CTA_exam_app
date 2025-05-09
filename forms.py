@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, SelectField
+from wtforms import StringField, SubmitField, SelectField, IntegerField
 from wtforms.fields.choices import RadioField
 from wtforms.fields.simple import PasswordField
 from wtforms.validators import DataRequired, Length
@@ -35,4 +35,9 @@ class LoginForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired()])
     passcode = PasswordField("Passcode", validators=[DataRequired(), Length(min=6, max=6, message="Your Passcode must be 6 digit")])
     submit = SubmitField("Submit")
+
+
+class ResetStudentScoreForm(FlaskForm):
+    score_id = IntegerField("Score ID", validators=[DataRequired()])
+    submit = SubmitField("Reset")
 

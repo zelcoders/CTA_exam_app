@@ -418,7 +418,8 @@ def check_result():
 
     results = db.session.execute(db.select(Results).where(Results.course_id == course.id, Results.user_id == current_user.id)).scalars().all()
 
-    score = db.session.execute(db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id)).scalar()
+    score = db.session.execute(db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id)).scalars().all()
+    score = score[-1]
     score_percent = round(score.score)
     if score_percent > 50:
         remark = "Congratulations! You have passed this course"

@@ -322,7 +322,7 @@ class ZelResult(db.Model):
     __tablename__ = "zel_result"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     student_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("zel_user.id"))
-    subject_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("user_subject.id"))
+    subject_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_user_subject.id"))
     ca1: Mapped[float] = mapped_column(Float, nullable=True)
     ca2: Mapped[float] = mapped_column(Float, nullable=True)
     ca3: Mapped[float] = mapped_column(Float, nullable=True)

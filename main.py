@@ -366,7 +366,7 @@ class ZelIssues(db.Model):
     date_resolved: Mapped[str] = mapped_column(String(100), nullable=True)
     date_reopened: Mapped[str] = mapped_column(String(100), nullable=True)
     date_resolved_2: Mapped[str] = mapped_column(String(100), nullable=True)
-    assigned_to: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_user.id"), nullable=True)
+    assigned_to: Mapped[str] = mapped_column(String(100), db.ForeignKey("zel_user.id"), nullable=True)
 
 
 class ZelTimetable(db.Model):

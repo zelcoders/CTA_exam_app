@@ -372,8 +372,8 @@ class ZelIssues(db.Model):
 class ZelTimetable(db.Model):
     __tablename__ = "zel_timetable"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    classroom_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("zel_classroom.id"))
-    subject: Mapped[str] = mapped_column(String(200), db.ForeignKey("zel_subject.id"))
+    classroom_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_classroom.id"))
+    subject: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_subject.id"))
     date: Mapped[str] = mapped_column(String(100), nullable=False)
     time: Mapped[str] = mapped_column(String(100), nullable=True)
     term: Mapped[str] = mapped_column(String(100), nullable=True)

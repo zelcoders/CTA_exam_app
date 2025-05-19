@@ -9,30 +9,14 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy import Integer, String, Float
 from werkzeug.security import generate_password_hash, check_password_hash
 
-import requests
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
 
 from forms import LoginForm, RegisterForm, CoursesForm, ExamQuestionsForm, ResetStudentScoreForm
 from smtplib import SMTP_SSL
 import os
-# from dotenv import load_dotenv
 from functools import wraps
 
-'''
-Red underlines? Install the required packages first: 
-Open the Terminal in PyCharm (bottom left). 
-
-On Windows type:
-python -m pip install -r requirements.txt
-
-On MacOS type:
-pip3 install -r requirements.txt
-
-This will install the packages from requirements.txt for this project.
-'''
-
 app = Flask(__name__)
-# load_dotenv(".env")
 app.config['SECRET_KEY'] = os.environ.get('FLASK_KEY')
 # os.environ("", "")
 zelcoders_password = os.environ.get('ZEL_PASS')
@@ -54,10 +38,52 @@ class Base(DeclarativeBase):
     pass
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DB_URI", "sqlite:///exam.db")
-
 db = SQLAlchemy(model_class=Base)
-
 db.init_app(app)
+
+
+# Create an admin-only decorator
+def admin_only(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        admin = db.session.execute(db.select(User).where(User.user_type == "Admin")).scalar()
+
+        if not admin and f.__name__ == "register":
+            return f(*args, **kwargs)
+        if not current_user.is_authenticated:
+            flash("Your session has timed out. Kindly re-enter your details to login!")
+            return redirect(url_for("home"))
+        elif current_user.user_type != "Admin":
+            flash("You are not authorized to access this page. Kindly re-enter your details to login!")
+            return redirect(url_for("home"))
+        # Otherwise continue with the route function
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def instructor_only(f):
+    @wraps(f)
+    def new_decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash("Your session has timed out. Kindly re-enter your details to login!")
+            return redirect(url_for("home"))
+        elif current_user.user_type != "Admin":
+            if current_user.user_type != "Instructor":
+                flash("You are not authorized to access this page. Kindly re-enter your details to login!")
+                return redirect(url_for("home"))
+        # Otherwise continue with the route function
+        return f(*args, **kwargs)
+    return new_decorated_function
+
+
+def my_login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash("Your session has timed out. Kindly re-enter your details to login!")
+            return redirect(url_for("home"))
+        return f(*args, **kwargs)
+    return decorated_function
 
 
 # CREATE TABLE
@@ -123,40 +149,266 @@ class Scores(db.Model):
     user = relationship("User", back_populates="score")
     course = relationship("Courses", back_populates="score")
 
+
+class ZelSchool(db.Model):
+    __tablename__ = "zel_school"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    address: Mapped[str] = mapped_column(String(1000), nullable=True)
+    email: Mapped[str] = mapped_column(String(100), nullable=True)
+    code: Mapped[str] = mapped_column(String(10), nullable=False, unique=True)
+    logo: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    students = relationship("ZelUser", back_populates="school")
+    classrooms = relationship("ZelClassroom", back_populates="school")
+    fees = relationship("ZelFees", back_populates="school")
+    bank_accounts = relationship("ZelBankAccounts", back_populates="school")
+    obj_question = relationship("ZelObjQuestions", back_populates="school")
+
+
+class ZelTerm(db.Model):
+    __tablename__ = "zel_term"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    term: Mapped[str] = mapped_column(String(100), nullable=False)
+    is_current: Mapped[str] = mapped_column(String(100), nullable=True)
+
+
+class ZelSession(db.Model):
+    __tablename__ = "zel_session"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    session: Mapped[str] = mapped_column(String(100), nullable=False)
+    is_current: Mapped[str] = mapped_column(String(100), nullable=True)
+
+
+class ZelUser(UserMixin, db.Model):
+    __tablename__ = "zel_user"
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    user_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    surname: Mapped[str] = mapped_column(String(100), nullable=False)
+    first_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    middle_name: Mapped[str] = mapped_column(String(100), nullable=True)
+    email: Mapped[str] = mapped_column(String(100), nullable=False)
+    username: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    password: Mapped[str] = mapped_column(String(250), nullable=True)
+    password_reset: Mapped[str] = mapped_column(String(250), nullable=True)
+    date_of_birth: Mapped[str] = mapped_column(String(100), nullable=True)
+    sex: Mapped[str] = mapped_column(String(100), nullable=True)
+    address: Mapped[str] = mapped_column(String(1000), nullable=True)
+    phone: Mapped[str] = mapped_column(String(100), nullable=True)
+    religion: Mapped[str] = mapped_column(String(100), nullable=True)
+    passport_photo: Mapped[str] = mapped_column(String(100), nullable=True)
+    admission_date_or_employment_date: Mapped[str] = mapped_column(String(100), nullable=True)
+    next_of_kin1: Mapped[str] = mapped_column(String(100), nullable=True)
+    next_of_kin1_contact: Mapped[str] = mapped_column(String(100), nullable=True)
+    next_of_kin2: Mapped[str] = mapped_column(String(100), nullable=True)
+    next_of_kin2_contact: Mapped[str] = mapped_column(String(100), nullable=True)
+    parent_occupation: Mapped[str] = mapped_column(String(100), nullable=True)
+    referee1: Mapped[str] = mapped_column(String(100), nullable=True)
+    referee1_contact: Mapped[str] = mapped_column(String(100), nullable=True)
+    referee2: Mapped[str] = mapped_column(String(100), nullable=True)
+    referee2_contact: Mapped[str] = mapped_column(String(100), nullable=True)
+    allergy: Mapped[str] = mapped_column(String(250), nullable=True)
+    blood_group: Mapped[str] = mapped_column(String(50), nullable=True)
+    genotype: Mapped[str] = mapped_column(String(50), nullable=True)
+    previous_school_or_previous_employment: Mapped[str] = mapped_column(String(1000), nullable=True)
+    talent_or_interest: Mapped[str] = mapped_column(String(250), nullable=True)
+    pickup_person: Mapped[str] = mapped_column(String(100), nullable=True)
+    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("school.id"), nullable=True)
+    classroom: Mapped[str] = mapped_column(String(100), nullable=True)
+    status: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    school = relationship("ZelSchool", back_populates="students")
+    subjects = relationship("ZelUserSubject", back_populates="users")
+    posted_by = relationship("ZelPayment", back_populates="posted_by")
+    results = relationship("ZelResult", back_populates="student")
+    class_teacher = relationship("ZelAttendance", back_populates="teacher")
+    log = relationship("ZelLog", back_populates="user")
+
+
+class ZelClassroom(db.Model):
+    __tablename__ = "zel_classroom"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    class_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    section: Mapped[str] = mapped_column(String(100), nullable=False)
+    grade: Mapped[int] = mapped_column(Integer, nullable=False)
+    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("school.id"), nullable=True)
+
+    school = relationship("ZelSchool", back_populates="classrooms")
+
+
+class ZelSubject(db.Model):
+    __tablename__ = "zel_subject"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    subject_name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
+    subject_code: Mapped[str] = mapped_column(String(100), nullable=True)
+    description: Mapped[str] = mapped_column(String(1000), nullable=True)
+
+    obj_question = relationship("ZelObjQuestions", back_populates="subject")
+
+
+class ZelUserClassroom(db.Model):
+    __tablename__ = "zel_user_classroom"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    current_classroom_name: Mapped[str] = mapped_column(String(100), nullable=True)
+    classroom2_name: Mapped[str] = mapped_column(String(100), nullable=True)
+    classroom3_name: Mapped[str] = mapped_column(String(100), nullable=True)
+    classroom4_name: Mapped[str] = mapped_column(String(100), nullable=True)
+    classroom5_name: Mapped[str] = mapped_column(String(100), nullable=True)
+    classroom6_name: Mapped[str] = mapped_column(String(100), nullable=True)
+    classroom7_name: Mapped[str] = mapped_column(String(100), nullable=True)
+    classroom8_name: Mapped[str] = mapped_column(String(100), nullable=True)
+
+
+class ZelUserSubject(db.Model):
+    __tablename__ = "zel_user_subject"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("user.id"), nullable=False)
+    term: Mapped[str] = mapped_column(String(100), nullable=False)
+    session: Mapped[str] = mapped_column(String(100), nullable=False)
+    subject_list: Mapped[str] = mapped_column(String(1000), nullable=True)
+
+    users = relationship("ZelUser", back_populates="subjects")
+    results = relationship("ZelResult", back_populates="subject")
+
+
+class ZelFees(db.Model):
+    __tablename__ = "zel_fees"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    fee_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("school.id"), nullable=False)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    grade: Mapped[str] = mapped_column(String(100), nullable=False)
+    term: Mapped[str] = mapped_column(String(100), nullable=False)
+    session: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    school = relationship("ZelSchool", back_populates="fees")
+
+
+class ZelBankAccounts(db.Model):
+    __tablename__ = "zel_bank_accounts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("school.id"))
+    bank_name: Mapped[str] = mapped_column(String(100))
+    account_name: Mapped[str] = mapped_column(String(250))
+    account_number: Mapped[str] = mapped_column(String(50))
+
+    school = relationship("ZelSchool", back_populates="bank_accounts")
+
+
+class ZelPayment(db.Model):
+    __tablename__ = "zel_payment"
+    receipt_number: Mapped[int] = mapped_column(Integer, primary_key=True)
+    receipt_date: Mapped[str] = mapped_column(String(100), nullable=False)
+    payer_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    payer_name: Mapped[str] = mapped_column(String(250), nullable=False)
+    payer_class: Mapped[str] = mapped_column(String(250), nullable=True)
+    payment_date: Mapped[str] = mapped_column(String(100), nullable=False)
+    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    discount: Mapped[float] = mapped_column(Float, nullable=False)
+    fee_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    session: Mapped[str] = mapped_column(String(100), nullable=False)
+    term: Mapped[str] = mapped_column(String(100), nullable=False)
+    payment_means: Mapped[str] = mapped_column(String(250), nullable=False)
+    receiving_bank: Mapped[str] = mapped_column(String(250), nullable=False)
+    receiving_account: Mapped[str] = mapped_column(String(50))
+    school_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    posted_by_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("user.id"))
+
+    posted_by = relationship("ZelUser", back_populates="posted_by")
+
+
+class ZelResult(db.Model):
+    __tablename__ = "zel_result"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    student_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("user.id"))
+    subject_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("user_subject.id"))
+    ca1: Mapped[float] = mapped_column(Float, nullable=True)
+    ca2: Mapped[float] = mapped_column(Float, nullable=True)
+    ca3: Mapped[float] = mapped_column(Float, nullable=True)
+    exam_obj_score: Mapped[float] = mapped_column(Float, nullable=True)
+    adjusted_exam_obj_score: Mapped[float] = mapped_column(Float, nullable=True)
+    practical_score: Mapped[float] = mapped_column(Float, nullable=True)
+    exam_theory_score: Mapped[float] = mapped_column(Float, nullable=True)
+    total_exam_score: Mapped[float] = mapped_column(Float, nullable=True)
+    total_score: Mapped[int] = mapped_column(Integer, nullable=True)
+    grade: Mapped[str] = mapped_column(String(2), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=True)
+    remarks: Mapped[str] = mapped_column(String(100), nullable=True)
+    classroom: Mapped[str] = mapped_column(String(100))
+    term: Mapped[str] = mapped_column(String(100))
+    session: Mapped[str] = mapped_column(String(100))
+
+    student = relationship("ZelUser", back_populates="results")
+    subject = relationship("ZelUserSubject", back_populates="results")
+
+
+class ZelAttendance(db.Model):
+    __tablename__ = "zel_attendance"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    student_id: Mapped[str] = mapped_column(String(100))
+    date: Mapped[str] = mapped_column(String(100), nullable=False)
+    status: Mapped[str] = mapped_column(String(100), nullable=False)
+    teacher_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("user.id"))
+    classroom: Mapped[str] = mapped_column(String(100))
+
+    teacher = relationship("ZelUser", back_populates="class_teacher")
+
+
+class ZelIssues(db.Model):
+    __tablename__ = "zel_issues"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    student_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("user.id"))
+    subject: Mapped[str] = mapped_column(String(200), nullable=False)
+    details: Mapped[str] = mapped_column(String(2000), nullable=False)
+    date_entered: Mapped[str] = mapped_column(String(100), nullable=False)
+    is_resolved: Mapped[str] = mapped_column(String(100), nullable=True)
+    date_resolved: Mapped[str] = mapped_column(String(100), nullable=True)
+    date_reopened: Mapped[str] = mapped_column(String(100), nullable=True)
+    date_resolved_2: Mapped[str] = mapped_column(String(100), nullable=True)
+    assigned_to: Mapped[int] = mapped_column(Integer, db.ForeignKey("user.id"), nullable=True)
+
+
+class ZelTimetable(db.Model):
+    __tablename__ = "zel_timetable"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    classroom_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("classroom.id"))
+    subject: Mapped[str] = mapped_column(String(200), db.ForeignKey("subject.id"))
+    date: Mapped[str] = mapped_column(String(100), nullable=False)
+    time: Mapped[str] = mapped_column(String(100), nullable=True)
+    term: Mapped[str] = mapped_column(String(100), nullable=True)
+    session: Mapped[str] = mapped_column(String(100), nullable=True)
+
+
+class ZelLog(db.Model):
+    __tablename__ = "zel_log"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[str] = mapped_column(String(50), db.ForeignKey("user.id"))
+    current_page: Mapped[str] = mapped_column(String(50), nullable=False)
+    date: Mapped[str] = mapped_column(String(50), nullable=False)
+    time: Mapped[str] = mapped_column(String(50), nullable=False)
+    activity: Mapped[str] = mapped_column(String(50), nullable=True)
+
+    user = relationship("ZelUser", back_populates="log")
+
+
+class ZelObjQuestions(db.Model):
+    __tablename__ = "zel_obj_questions"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    question: Mapped[str] = mapped_column(String(1000), nullable=False)
+    options: Mapped[str] = mapped_column(String(1000), nullable=False)
+    correct_option: Mapped[str] = mapped_column(String(500), nullable=False)
+    session: Mapped[str] = mapped_column(String(50), nullable=False)
+    term: Mapped[str] = mapped_column(String(50), nullable=False)
+    subject_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("subject.id"))
+    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("school.id"))
+    grade: Mapped[int] = mapped_column(Integer, nullable=True)
+
+    subject = relationship("ZelSubject", back_populates="obj_question")
+    school = relationship("ZelSchool", back_populates="obj_question")
+
 with app.app_context():
     db.create_all()
-
-
-# Create an admin-only decorator
-def admin_only(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        admin = db.session.execute(db.select(User).where(User.user_type == "Admin")).scalar()
-
-        if not admin and f.__name__ == "register":
-            return f(*args, **kwargs)
-        if not current_user.is_authenticated:
-            flash("Your session has timed out. Kindly re-enter your details to login!")
-            return redirect(url_for("home"))
-        elif current_user.user_type != "Admin":
-            return abort(401)
-        # Otherwise continue with the route function
-        return f(*args, **kwargs)
-    return decorated_function
-
-
-def instructor_only(f):
-    @wraps(f)
-    def new_decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated:
-            flash("Your session has timed out. Kindly re-enter your details to login!")
-            return redirect(url_for("home"))
-        elif current_user.user_type != "Admin":
-            if current_user.user_type != "Instructor":
-                return abort(401)
-        # Otherwise continue with the route function
-        return f(*args, **kwargs)
-    return new_decorated_function
 
 
 @app.route("/CTA/", methods=["GET", "POST"])
@@ -418,10 +670,10 @@ def check_result():
 
     results = db.session.execute(db.select(Results).where(Results.course_id == course.id, Results.user_id == current_user.id)).scalars().all()
 
-    score = db.session.execute(db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id)).scalars().all()
+    score = db.session.execute(db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id).order_by(Scores.score)).scalars().all()
     score = score[-1]
     score_percent = round(score.score)
-    if score_percent > 50:
+    if score_percent >= 50:
         remark = "Congratulations! You have passed this course"
     else:
         remark = "Sorry! You scored below the pass mark for this course and you need to rewrite this exam."

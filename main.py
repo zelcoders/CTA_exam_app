@@ -213,7 +213,7 @@ class ZelUser(UserMixin, db.Model):
     previous_school_or_previous_employment: Mapped[str] = mapped_column(String(1000), nullable=True)
     talent_or_interest: Mapped[str] = mapped_column(String(250), nullable=True)
     pickup_person: Mapped[str] = mapped_column(String(100), nullable=True)
-    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("school.id"), nullable=True)
+    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_school.id"), nullable=True)
     classroom: Mapped[str] = mapped_column(String(100), nullable=True)
     status: Mapped[str] = mapped_column(String(50), nullable=False)
 
@@ -231,7 +231,7 @@ class ZelClassroom(db.Model):
     class_name: Mapped[str] = mapped_column(String(100), nullable=False)
     section: Mapped[str] = mapped_column(String(100), nullable=False)
     grade: Mapped[int] = mapped_column(Integer, nullable=False)
-    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("school.id"), nullable=True)
+    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_school.id"), nullable=True)
 
     school = relationship("ZelSchool", back_populates="classrooms")
 
@@ -263,7 +263,7 @@ class ZelUserClassroom(db.Model):
 class ZelUserSubject(db.Model):
     __tablename__ = "zel_user_subject"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("user.id"), nullable=False)
+    user_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("zel_user.id"), nullable=False)
     term: Mapped[str] = mapped_column(String(100), nullable=False)
     session: Mapped[str] = mapped_column(String(100), nullable=False)
     subject_list: Mapped[str] = mapped_column(String(1000), nullable=True)
@@ -276,7 +276,7 @@ class ZelFees(db.Model):
     __tablename__ = "zel_fees"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     fee_type: Mapped[str] = mapped_column(String(100), nullable=False)
-    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("school.id"), nullable=False)
+    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_school.id"), nullable=False)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
     grade: Mapped[str] = mapped_column(String(100), nullable=False)
     term: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -288,7 +288,7 @@ class ZelFees(db.Model):
 class ZelBankAccounts(db.Model):
     __tablename__ = "zel_bank_accounts"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("school.id"))
+    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_school.id"))
     bank_name: Mapped[str] = mapped_column(String(100))
     account_name: Mapped[str] = mapped_column(String(250))
     account_number: Mapped[str] = mapped_column(String(50))
@@ -313,7 +313,7 @@ class ZelPayment(db.Model):
     receiving_bank: Mapped[str] = mapped_column(String(250), nullable=False)
     receiving_account: Mapped[str] = mapped_column(String(50))
     school_id: Mapped[int] = mapped_column(Integer, nullable=False)
-    posted_by_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("user.id"))
+    posted_by_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("zel_user.id"))
 
     posted_by = relationship("ZelUser", back_populates="posted_by")
 
@@ -321,7 +321,7 @@ class ZelPayment(db.Model):
 class ZelResult(db.Model):
     __tablename__ = "zel_result"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    student_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("user.id"))
+    student_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("zel_user.id"))
     subject_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("user_subject.id"))
     ca1: Mapped[float] = mapped_column(Float, nullable=True)
     ca2: Mapped[float] = mapped_column(Float, nullable=True)
@@ -349,7 +349,7 @@ class ZelAttendance(db.Model):
     student_id: Mapped[str] = mapped_column(String(100))
     date: Mapped[str] = mapped_column(String(100), nullable=False)
     status: Mapped[str] = mapped_column(String(100), nullable=False)
-    teacher_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("user.id"))
+    teacher_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("zel_user.id"))
     classroom: Mapped[str] = mapped_column(String(100))
 
     teacher = relationship("ZelUser", back_populates="class_teacher")
@@ -358,7 +358,7 @@ class ZelAttendance(db.Model):
 class ZelIssues(db.Model):
     __tablename__ = "zel_issues"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    student_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("user.id"))
+    student_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("zel_user.id"))
     subject: Mapped[str] = mapped_column(String(200), nullable=False)
     details: Mapped[str] = mapped_column(String(2000), nullable=False)
     date_entered: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -366,14 +366,14 @@ class ZelIssues(db.Model):
     date_resolved: Mapped[str] = mapped_column(String(100), nullable=True)
     date_reopened: Mapped[str] = mapped_column(String(100), nullable=True)
     date_resolved_2: Mapped[str] = mapped_column(String(100), nullable=True)
-    assigned_to: Mapped[int] = mapped_column(Integer, db.ForeignKey("user.id"), nullable=True)
+    assigned_to: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_user.id"), nullable=True)
 
 
 class ZelTimetable(db.Model):
     __tablename__ = "zel_timetable"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    classroom_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("classroom.id"))
-    subject: Mapped[str] = mapped_column(String(200), db.ForeignKey("subject.id"))
+    classroom_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("zel_classroom.id"))
+    subject: Mapped[str] = mapped_column(String(200), db.ForeignKey("zel_subject.id"))
     date: Mapped[str] = mapped_column(String(100), nullable=False)
     time: Mapped[str] = mapped_column(String(100), nullable=True)
     term: Mapped[str] = mapped_column(String(100), nullable=True)
@@ -383,7 +383,7 @@ class ZelTimetable(db.Model):
 class ZelLog(db.Model):
     __tablename__ = "zel_log"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[str] = mapped_column(String(50), db.ForeignKey("user.id"))
+    user_id: Mapped[str] = mapped_column(String(50), db.ForeignKey("zel_user.id"))
     current_page: Mapped[str] = mapped_column(String(50), nullable=False)
     date: Mapped[str] = mapped_column(String(50), nullable=False)
     time: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -400,8 +400,8 @@ class ZelObjQuestions(db.Model):
     correct_option: Mapped[str] = mapped_column(String(500), nullable=False)
     session: Mapped[str] = mapped_column(String(50), nullable=False)
     term: Mapped[str] = mapped_column(String(50), nullable=False)
-    subject_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("subject.id"))
-    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("school.id"))
+    subject_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_subject.id"))
+    school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_school.id"))
     grade: Mapped[int] = mapped_column(Integer, nullable=True)
 
     subject = relationship("ZelSubject", back_populates="obj_question")

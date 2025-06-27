@@ -19,7 +19,7 @@
             <!-- Navigation-->
             <nav class="navbar navbar-expand-lg navbar bg-white">
                 <div class="container px-5">
-                    <a class="navbar-brand" href="{{ url_for('home') }}">
+                    <a class="navbar-brand" href="#">
                         <img src="{{ url_for('static', filename=filename) }}" alt="CTA Logo" width="50px">
                         {{ company_name }}
                     </a>
@@ -33,7 +33,7 @@
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('reset_score') }}">Reset Score</a></li>
                             {% endif %}
                             {% if current_user.is_authenticated: %}
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('home') }}">Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" href="#">Dashboard</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('logout') }}">Logout</a></li>
                             {% endif %}
                         </ul>

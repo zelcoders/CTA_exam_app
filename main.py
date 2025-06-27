@@ -46,16 +46,26 @@ db.init_app(app)
 def admin_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        admin = db.session.execute(db.select(User).where(User.user_type == "Admin")).scalar()
-
-        if not admin and f.__name__ == "register":
-            return f(*args, **kwargs)
         if not current_user.is_authenticated:
             flash("Your session has timed out. Kindly re-enter your details to login!")
-            return redirect(url_for("home"))
+            return redirect(url_for("cta_home"))
         elif current_user.user_type != "Admin":
             flash("You are not authorized to access this page. Kindly re-enter your details to login!")
-            return redirect(url_for("home"))
+            return redirect(url_for("cta_home"))
+        # Otherwise continue with the route function
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def sosiec_admin_only(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            flash("Your session has timed out. Kindly re-enter your details to login!")
+            return redirect(url_for("sosiec_home"))
+        elif current_user.user_type != "Admin" or current_user.user_type != "SOS - Admin":
+            flash("You are not authorized to access this page. Kindly re-enter your details to login!")
+            return redirect(url_for("sosiec_home"))
         # Otherwise continue with the route function
         return f(*args, **kwargs)
     return decorated_function
@@ -66,11 +76,11 @@ def instructor_only(f):
     def new_decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             flash("Your session has timed out. Kindly re-enter your details to login!")
-            return redirect(url_for("home"))
+            return redirect(url_for("cta_home"))
         elif current_user.user_type != "Admin":
             if current_user.user_type != "Instructor":
                 flash("You are not authorized to access this page. Kindly re-enter your details to login!")
-                return redirect(url_for("home"))
+                return redirect(url_for("cta_home"))
         # Otherwise continue with the route function
         return f(*args, **kwargs)
     return new_decorated_function
@@ -81,7 +91,7 @@ def my_login_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated:
             flash("Your session has timed out. Kindly re-enter your details to login!")
-            return redirect(url_for("home"))
+            return redirect(url_for("cta_home"))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -412,7 +422,8 @@ with app.app_context():
 
 
 @app.route("/CTA/", methods=["GET", "POST"])
-def home():
+def cta_home():
+    company_name = "Champions Transformation Academy"
     form = LoginForm()
     if form.validate_on_submit():
         username = form.username.data.lower()
@@ -420,28 +431,33 @@ def home():
         user = db.session.execute(db.select(User).where(User.username == username)).scalar()
         if not user:
             flash("Incorrect Username. Please try again")
-            return redirect(url_for("home"))
+            return redirect(url_for("cta_home"))
         elif not check_password_hash(user.passcode, passcode):
             flash("Wrong Passcode. Please enter the correct Passcode")
-            return redirect(url_for("home"))
+            return redirect(url_for("cta_home"))
         else:
             login_user(user)
             return redirect(url_for('dashboard'))
-    return render_template("index.html", form=form, title="Login", description="Please enter your login details.", year=this_year)
+    return render_template("login.html", form=form, title="Login",
+                           description="Please enter your login details.", year=this_year, company_name=company_name,
+                           filename="assets/img/cca_logo.png")
 
 
 # Create register route
-@app.route("/CTA/register", methods=["GET", "POST"])
+@app.route("/register", methods=["GET", "POST"])
 @admin_only
 def register():
     form = RegisterForm()
     if form.validate_on_submit():
         surname = form.surname.data.title()
         first_name = form.first_name.data.title()
-        username = f"{first_name[0].lower()}{surname.lower()}"
+        if form.company.data == "SOSIEC":
+            username = f"sosiec_{first_name[0].lower()}{surname.lower()}"
+        else:
+            username = f"{first_name[0].lower()}{surname.lower()}"
         users = db.session.execute(db.select(User).where(User.username.startswith(username))).scalars().all()
         if users:
-            username = f"{first_name[0].lower()}{surname.lower()}{len(users)}"
+            username = f"{username}{len(users)}"
         passcode = random.randint(100000, 999999)
         hashed_passcode = generate_password_hash(str(passcode), method='pbkdf2:sha256', salt_length=random.randint(8, 10))
         branch = form.branch.data
@@ -468,7 +484,7 @@ def register():
         return redirect(url_for("register"))
 
 
-    return render_template("index.html", form=form, title="Register User", year=this_year)
+    return render_template("login.html", form=form, title="Register User", year=this_year)
 
 # make dashboard route require login
 
@@ -500,6 +516,7 @@ def dashboard():
 @app.route("/CTA/add_course", methods=["GET", "POST"])
 @admin_only
 def add_course():
+    company_name = "Champions Transformation Academy"
     form = CoursesForm()
     if form.validate_on_submit():
         course_code = form.course_code.data
@@ -521,12 +538,14 @@ def add_course():
         return redirect(url_for("add_course"))
 
 
-    return render_template("index.html", form=form, title="Register New Course", year=this_year)
+    return render_template("login.html", form=form, title="Register New Course", year=this_year,
+                           company_name=company_name, filename="assets/img/cca_logo.png")
 
 # create a route for setting exam questions loading the question form
 @app.route("/CTA/set_exam_questions", methods=["GET", "POST"])
 @instructor_only
 def set_exam():
+    company_name = "Champions Transformation Academy"
     course_code = request.args.get("course_code")
     course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
     form = ExamQuestionsForm()
@@ -558,13 +577,15 @@ def set_exam():
 
         return redirect(url_for("set_exam", course_code=course_code))
 
-    return render_template("index.html", form=form, year=this_year, title=f"{course.course_title} Exam", course=course)
+    return render_template("login.html", form=form, year=this_year, title=f"{course.course_title} Exam",
+                           course=course, company_name=company_name, filename="assets/img/cca_logo.png")
 
 
 # create a route for loading exam questions for a selected course
 @app.route("/CTA/exam", methods=["GET", "POST"])
 @login_required
 def exam():
+    company_name = "Champions Transformation Academy"
     course_code = request.args.get("course_code")
     course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
 
@@ -659,12 +680,15 @@ def exam():
     db.session.add(new_score)
     db.session.commit()
 
-    return render_template("exams.html", questions=exam_dict, year=this_year, title=f"{course.course_title} Exam", course=course)
+    return render_template("exams.html", questions=exam_dict, year=this_year,
+                           title=f"{course.course_title} Exam", course=course, company_name=company_name,
+                           filename="assets/img/cca_logo.png")
 
 
 @app.route("/CTA/result")
 @login_required
 def check_result():
+    company_name = "Champions Transformation Academy"
     course_code = request.args.get("course_code")
     course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
 
@@ -678,18 +702,20 @@ def check_result():
     else:
         remark = "Sorry! You scored below the pass mark for this course and you need to rewrite this exam."
 
-    return render_template("result.html", title=f"{course.course_title} Results", results=results, score=score_percent, remark=remark)
+    return render_template("result.html", title=f"{course.course_title} Results", results=results,
+                           score=score_percent, remark=remark, company_name=company_name, filename="assets/img/cca_logo.png")
 
 
 @app.route("/CTA/logout")
 def logout():
     logout_user()
-    return redirect(url_for('home'))
+    return redirect(url_for('cta_home'))
 
 
 @app.route("/CTA/instruction")
 @login_required
 def instruction():
+    company_name = "Champions Transformation Academy"
     course_code = request.args.get("course_code")
     course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
     return render_template("instruction.html", title=f"{course.course_title} Exam Instructions", course=course)
@@ -796,7 +822,7 @@ def edit_question():
 
         db.session.commit()
         return redirect(url_for("view_questions", course_code=course_code))
-    return render_template("index.html", form=form, year=this_year, title=f"{course.course_title} Exam",
+    return render_template("login.html", form=form, year=this_year, title=f"{course.course_title} Exam",
                                course=course)
 
 
@@ -823,7 +849,7 @@ def reset_score():
         score.remark = "Retake"
         db.session.commit()
         return redirect(url_for("dashboard"))
-    return render_template("index.html", form=form, title="Reset Student Score", year=this_year)
+    return render_template("login.html", form=form, title="Reset Student Score", year=this_year)
 
 
 @app.route("/CTA/edit_course", methods=["GET", "POST"])
@@ -848,7 +874,30 @@ def edit_course():
 
         db.session.commit()
         return redirect(url_for("dashboard"))
-    return render_template("index.html", form=form, title="Edit Course", year=this_year)
+    return render_template("login.html", form=form, title="Edit Course", year=this_year)
+
+
+
+@app.route("/sosiec/", methods=["GET", "POST"])
+def sosiec_home():
+    company_name = "SOSIEC"
+    form = LoginForm()
+    if form.validate_on_submit():
+        username = form.username.data.lower()
+        passcode = form.passcode.data
+        user = db.session.execute(db.select(User).where(User.username == username)).scalar()
+        if not user:
+            flash("Incorrect Username. Please try again")
+            return redirect(url_for("sosiec_home"))
+        elif not check_password_hash(user.passcode, passcode):
+            flash("Wrong Passcode. Please enter the correct Passcode")
+            return redirect(url_for("sosiec_home"))
+        else:
+            login_user(user)
+            return redirect(url_for('dashboard'))
+    return render_template("login.html", form=form, title="Login",
+                           description="Please enter your login details.", year=this_year, company_name=company_name,
+                           filename="assets/img/sosiec_logo.jpg")
 
 if __name__ == '__main__':
     app.run(debug=True)

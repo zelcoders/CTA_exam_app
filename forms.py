@@ -7,6 +7,7 @@ from wtforms.validators import DataRequired, Length
 
 class RegisterForm(FlaskForm):
     surname = StringField("Surname", validators=[DataRequired()])
+    company = SelectField("Company",choices=["", "CCA", "SOSIEC"], validate_choice=True)
     first_name = StringField("First Name", validators=[DataRequired()])
     branch = SelectField("Church branch", choices=["", "Abuja", "Ajipowo", "Ikere Ekiti", "Lagos", "Igoba", "Headquaters", "Ado"], validate_choice=True)
     user_type = SelectField("Users", choices=[("Student", "Student"), ("Instructor", "Instructor"), ("Admin", "Admin")], validate_choice=True)

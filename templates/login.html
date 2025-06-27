@@ -1,0 +1,25 @@
+{% extends 'base-new.html' %}
+{% from 'bootstrap5/form.html' import render_form %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+
+            <!-- Page content-->
+            <section class="py-5">
+                <div class="container px-5">
+                    <!-- Contact form-->
+                    <div class="bg-light rounded-3 py-5 px-4 px-md-5 mb-5">
+                        <div class="text-center mb-5">
+                            <h1 class="fw-bolder">{{ title }}</h1>
+                            <p class="lead fw-normal text-muted mb-0">Please enter your login details below:</p>
+                        </div>
+                        <div class="row gx-5 justify-content-center">
+                            <div class="col-lg-8 col-xl-6">
+                                {{ render_form(form, novalidate=True, button_style='warning') }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+{% endblock %}
+

@@ -1000,6 +1000,12 @@ def instructions_gcree():
     return render_template("instruction-gcree.html", company_name=company_name, filename="assets/img/gcra_logo2.png", title="Entrance Exam Instructions", form=entrance_form)
 
 
+@app.route("/gcree/logout")
+def logout_gcree():
+    logout_user()
+    return redirect(url_for('instructions_gcree'))
+
+
 @app.route("/CTA/delete_question")
 @instructor_only
 def delete_question():

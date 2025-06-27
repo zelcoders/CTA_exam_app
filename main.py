@@ -910,6 +910,25 @@ def exam_gcree():
 
         return redirect(url_for('check_result_gcree', course_code=course_code))
 
+    score = db.session.execute(db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id,
+                                                       Scores.remark == "Pass")).scalar()
+    score_fail = db.session.execute(
+        db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id,
+                                Scores.remark == "Fail")).scalar()
+
+    if score or score_fail:
+        return redirect(url_for('check_result', course_code=course_code))
+
+    new_score = Scores()
+    new_score.user_id = current_user.id
+    new_score.course_id = course.id
+    new_score.year = str(this_year)
+    new_score.score = 0
+    new_score.remark = "Fail"
+
+    db.session.add(new_score)
+    db.session.commit()
+
     return render_template("exams-gcr.html", questions=exam_dict, year=this_year,
                            title=f"{course.course_title}", course=course, company_name=company_name,
                            filename="assets/img/gcra_logo2.png")

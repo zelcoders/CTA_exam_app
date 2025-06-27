@@ -42,3 +42,10 @@ class ResetStudentScoreForm(FlaskForm):
     score_id = IntegerField("Score ID", validators=[DataRequired()])
     submit = SubmitField("Reset")
 
+
+class GcreeForm(FlaskForm):
+    surname = StringField("Surname", validators=[DataRequired()])
+    other_names = StringField("Other Names", validators=[DataRequired()])
+    age = IntegerField("Age", validators=[DataRequired()])
+    submit = SubmitField("Proceed to Examination")
+

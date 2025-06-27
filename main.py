@@ -11,7 +11,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
 
-from forms import LoginForm, RegisterForm, CoursesForm, ExamQuestionsForm, ResetStudentScoreForm
+from forms import LoginForm, RegisterForm, CoursesForm, ExamQuestionsForm, ResetStudentScoreForm, GcreeForm
 from smtplib import SMTP_SSL
 import os
 from functools import wraps
@@ -824,6 +824,162 @@ def edit_question():
         return redirect(url_for("view_questions", course_code=course_code))
     return render_template("login.html", form=form, year=this_year, title=f"{course.course_title} Exam",
                                course=course)
+
+
+# create a route for loading exam questions for a selected course
+@app.route("/GCR/entrance-exam", methods=["GET", "POST"])
+@login_required
+def exam_gcree():
+    company_name = "The Golden Crest Royal Academy"
+    course_code = "GCR-EE"
+    course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
+
+    exam_questions = db.session.execute(db.select(Questions).where(Questions.course_id == course.id)).scalars().all()
+    user_id = int(request.args.get("user_id"))
+
+    exam_dict = []
+    for question in exam_questions:
+        options = question.options.split(";")
+        random.shuffle(options)
+        new_question = {
+            "question_no": exam_questions.index(question) + 1,
+            "question_id": question.id,
+            "question": question.question,
+            "correct_option": question.correct_option,
+            "options": options
+        }
+        exam_dict.append(new_question)
+
+    if request.method == "POST":
+        course_id = course.id
+
+
+        results = db.session.execute(
+            db.select(Results).where(Results.user_id == user_id, Results.course_id == course_id)).scalars().all()
+        score = db.session.execute(
+            db.select(Scores).where(Scores.user_id == user_id, Scores.course_id == course_id)).scalar()
+
+        if score.score > 0 and score.remark != "Retake":
+            return redirect(url_for('check_result_gcree', course_code=course_code))
+
+        if results:
+            for result in results:
+                db.session.delete(result)
+                db.session.commit()
+            old_score = db.session.execute(
+                db.select(Scores).where(Scores.user_id == user_id, Scores.course_id == course_id)).scalar()
+            if old_score:
+                db.session.delete(old_score)
+                db.session.commit()
+
+        for i in range(len(exam_dict)):
+            if request.form.get(f"question_{i + 1}") is None:
+                selected_answer = "Not answered"
+            else:
+                selected_answer = request.form.get(f"question_{i + 1}")
+            correct_option = exam_dict[i]["correct_option"]
+            question_id = exam_dict[i]["question_id"]
+
+            new_result = Results()
+            new_result.user_id = user_id
+            new_result.course_id = course_id
+            new_result.question_id = question_id
+            new_result.selected_answer = selected_answer
+            new_result.correct_answer = correct_option
+
+            db.session.add(new_result)
+            db.session.commit()
+
+        score_calc = db.session.execute(db.select(Results).where(Results.user_id == current_user.id,
+                                                                 Results.course_id == course.id)).scalars().all()
+
+        student_score = 0
+        for result in score_calc:
+            if result.selected_answer == result.correct_answer:
+                student_score += 1
+
+        exam_score = db.session.execute(
+            db.select(Scores).where(Scores.user_id == current_user.id, Scores.course_id == course.id)).scalar()
+
+        exam_score.score = (student_score / len(exam_dict)) * 100
+        if student_score >= len(exam_questions) / 2:
+            exam_score.remark = "Pass"
+        else:
+            exam_score.remark = "Fail"
+
+        db.session.commit()
+
+        return redirect(url_for('check_result_gcree', course_code=course_code))
+
+    return render_template("exams-gcr.html", questions=exam_dict, year=this_year,
+                           title=f"{course.course_title}", course=course, company_name=company_name,
+                           filename="assets/img/gcra_logo2.png")
+
+
+@app.route("/check_result_gcree")
+@login_required
+def check_result_gcree():
+    company_name = "The Golden Crest Royal Academy"
+    course_code = request.args.get("course_code")
+
+    course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
+
+    results = db.session.execute(
+        db.select(Results).where(Results.course_id == course.id, Results.user_id == current_user.id)).scalars().all()
+
+    score = db.session.execute(
+        db.select(Scores).where(Scores.course_id == course.id, Scores.user_id == current_user.id).order_by(
+            Scores.score)).scalars().all()
+    score = score[-1]
+    score_percent = round(score.score)
+    return render_template("check_result.html", title="Entrance Exam Results", company_name=company_name,
+                           results=results, score=score_percent, filename="assets/img/gcra_logo2.png")
+
+
+@app.route("/gcree", methods=["GET", "POST"])
+def instructions_gcree():
+    company_name= "The Golden Crest Royal Academy"
+    entrance_form = GcreeForm()
+    if entrance_form.validate_on_submit():
+        surname = entrance_form.surname.data.title()
+        other_names = entrance_form.other_names.data.title()
+        age = entrance_form.age.data
+
+        username = f"gcr_{other_names[0].lower()}{surname.lower()}"
+
+        users = db.session.execute(db.select(User).where(User.username.startswith(username))).scalars().all()
+        if users:
+            username = f"{username}{len(users)}"
+        passcode = random.randint(100000, 999999)
+        hashed_passcode = generate_password_hash(str(passcode), method='pbkdf2:sha256',
+                                                 salt_length=random.randint(8, 10))
+        branch = "GCR"
+        user_type = "Prospective Student"
+
+        new_user = User()
+        new_user.surname = surname
+        new_user.first_name = other_names
+        new_user.username = username.lower()
+        new_user.passcode = hashed_passcode
+        new_user.branch = branch
+        new_user.user_type = user_type
+
+        db.session.add(new_user)
+        db.session.commit()
+
+        login_user(new_user)
+        user_id = db.session.execute(db.select(User).where(User.username == username.lower())).scalar()
+
+        with SMTP_SSL("smtp.gmail.com", port=465) as connection:
+            connection.login(user="zelcoders@gmail.com", password=zelcoders_password)
+            connection.sendmail(from_addr="zelcoders@gmail.com", to_addrs="zelcoders@gmail.com",
+                                msg=f"Subject:Golden Crest Entrance exam New User Account\n\nA new account "
+                                    f"has been created for {surname} {other_names} on Golden Crest Entrance Exam portal with below details:\n\n"
+                                    f"Username: {username}\nPasscode: {passcode}\nAge: {age}\n\nEnsure you keep your passcode safe and do not disclose to "
+                                    f"anyone.\n\nRegards,\nZelcoders Team.")
+
+        return redirect(url_for("exam_gcree", user_id=user_id.id))
+    return render_template("instruction-gcree.html", company_name=company_name, filename="assets/img/gcra_logo2.png", title="Entrance Exam Instructions", form=entrance_form)
 
 
 @app.route("/CTA/delete_question")

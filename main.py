@@ -835,7 +835,6 @@ def exam_gcree():
     course = db.session.execute(db.select(Courses).where(Courses.course_code == course_code)).scalar()
 
     exam_questions = db.session.execute(db.select(Questions).where(Questions.course_id == course.id)).scalars().all()
-    user_id = int(request.args.get("user_id"))
 
     exam_dict = []
     for question in exam_questions:
@@ -852,7 +851,7 @@ def exam_gcree():
 
     if request.method == "POST":
         course_id = course.id
-
+        user_id = current_user.id
 
         results = db.session.execute(
             db.select(Results).where(Results.user_id == user_id, Results.course_id == course_id)).scalars().all()
@@ -978,7 +977,7 @@ def instructions_gcree():
                                     f"Username: {username}\nPasscode: {passcode}\nAge: {age}\n\nEnsure you keep your passcode safe and do not disclose to "
                                     f"anyone.\n\nRegards,\nZelcoders Team.")
 
-        return redirect(url_for("exam_gcree", user_id=user_id.id))
+        return redirect(url_for("exam_gcree"))
     return render_template("instruction-gcree.html", company_name=company_name, filename="assets/img/gcra_logo2.png", title="Entrance Exam Instructions", form=entrance_form)
 
 

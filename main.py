@@ -423,7 +423,7 @@ with app.app_context():
 
 @app.route("/CTA/", methods=["GET", "POST"])
 def cta_home():
-    company_name = "Champions Transformation Academy"
+    company_name = ""
     form = LoginForm()
     if form.validate_on_submit():
         username = form.username.data.lower()
@@ -440,7 +440,7 @@ def cta_home():
             return redirect(url_for('dashboard'))
     return render_template("login.html", form=form, title="Login",
                            description="Please enter your login details.", year=this_year, company_name=company_name,
-                           filename="assets/img/cca_logo.png")
+                           filename="")
 
 
 # Create register route

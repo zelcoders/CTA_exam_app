@@ -583,7 +583,6 @@ class QuestionPoolObj(db.Model):
     question_type: Mapped[str] = mapped_column(String(50), nullable=True)
 
     question_background = relationship("QuestionBackground", back_populates="child_question")
-    exam_questions_obj = relationship("ExamQuestionsObj", back_populates="question")
     obj_results = relationship("ZelObjResults", back_populates="question")
 
 

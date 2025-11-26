@@ -576,7 +576,7 @@ class QuestionPoolObj(db.Model):
     question: Mapped[str] = mapped_column(Text, nullable=False)
     correct_option: Mapped[str] = mapped_column(String(500), nullable=False)
     options: Mapped[str] = mapped_column(String(500), nullable=False)
-    question_background_id: Mapped[int] = mapped_column(Integer, db.ForeignKey('question_background.id'))
+    question_background_id: Mapped[int] = mapped_column(Integer, db.ForeignKey('question_background.id'), nullable=True)
     user_type: Mapped[str] = mapped_column(String(50), nullable=False)
     question_source: Mapped[str] = mapped_column(String(50), nullable=True)
     question_year: Mapped[int] = mapped_column(Integer, nullable=True)
@@ -1236,7 +1236,7 @@ def term_exam_obj(subject_id):
                 "question_id": q_id_int,
                 "question": question.question,
                 "correct_option": question.correct_option,
-                "options": random.shuffle(question.options.split(";")),
+                "options": random.shuffle(question.options.split("`")),
                 "question_background": question_background.question_background
             }
             exam_dict.append(new_question)
@@ -1253,7 +1253,7 @@ def term_exam_obj(subject_id):
                         "question_id": q.id,
                         "question": q.question,
                         "correct_option": q.correct_option,
-                        "options": random.shuffle(q.options.split(";")),
+                        "options": random.shuffle(q.options.split("`")),
                         "question_background": None
                     }
                     exam_dict.append(new_question)
@@ -1264,7 +1264,7 @@ def term_exam_obj(subject_id):
                 "question_id": q_id_int,
                 "question": question.question,
                 "correct_option": question.correct_option,
-                "options": random.shuffle(question.options.split(";")),
+                "options": random.shuffle(question.options.split("`")),
                 "question_background": None
             }
             exam_dict.append(new_question)

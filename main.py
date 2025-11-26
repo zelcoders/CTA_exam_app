@@ -183,7 +183,7 @@ class Results(db.Model):
 
 class ZelObjResults(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    user_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_user.id"))
+    user_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("zel_user.id"))
     subject_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_subject.id"))
     question_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("question_pool_obj.id"))
     selected_answer: Mapped[str] = mapped_column(String(1000), nullable=False)

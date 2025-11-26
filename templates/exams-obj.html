@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+{% from 'bootstrap5/form.html' import render_form %}
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Entrance Exam</title>
+        <!-- Favicon-->
+        <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='assets/favicon.ico') }}" />
+        <!-- Bootstrap icons-->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet" />
+        <!-- Core theme CSS (includes Bootstrap)-->
+        <link href="{{ url_for('static', filename='css/styles-cta.css') }}" rel="stylesheet" />
+    </head>
+    <body class="d-flex flex-column">
+        <main class="flex-shrink-0">
+            <!-- Navigation-->
+            <nav class="navbar navbar-expand-lg navbar bg-white">
+                <div class="container px-5">
+                    <a class="navbar-brand" href="#">
+                        <img src="{{ url_for('static', filename=filename) }}" alt="Logo" width="70px">
+                        {{ company_name }}
+                    </a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('logout_gcr') }}">Click here to exit page</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+            <div id="layoutAuthentication_content">
+                <main>
+                    <div class="container">
+                        <div class="row justify-content-center">
+                            <div class="col-lg-8 mt-5 py-5">
+                                <div class="card-header">
+                                    <p class="text-center text-white fst-italic mb-5">The Premium School Management System</p>
+                                </div>
+                                <div class="card shadow-lg border-0 rounded-lg mt-5">
+                                    <div class="card-header" style="position:sticky; top:0;">
+                                        <h3 class="text-center font-weight-light my-4">{{ title }}</h3>
+                                        <div id="countdown">
+                                            <strong>Duration: <span id="minutes" style="color:green"></span>:<span id="seconds" style="color:green"></span></strong>
+                                        </div>
+                                    </div>
+                                    {% with messages = get_flashed_messages() %}
+                                    {% if messages %}
+                                    {% for message in messages %}
+                                    <p style="color:red; font-style:italic; text-align:center">{{ message }}</p>
+                                    {% endfor %}
+                                    {% endif %}
+                                    {% endwith %}
+                                    <div class="card-body">
+
+                                        <form method="post" action="{{ url_for('term_exam_obj') }}">
+                                            {% for question in questions %}
+                                            {% if question['question_background'] is not None %}
+                                            <p>{{ question['question_background']|safe }}</p>
+                                            {% endif %}
+                                            <p>{{ question['question_no'] }}. {{ question['question']|safe }}</p>
+                                            {% for option in question['options'] %}
+                                            <input type="radio" name="question_{{ question['question_no'] }}" value="{{ option }}">{{ option }}<br>
+                                            {% endfor %}
+                                            <br><br>
+                                            {% endfor %}
+                                            <div class="d-flex align-items-center justify-content-between mt-4 mb-0">
+                                                <button type="submit">Submit</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+            </main>
+            <!-- Footer-->
+        <footer class="bg-dark py-4 mt-auto">
+            <div class="container px-5">
+                <div class="row align-items-center justify-content-between flex-column flex-sm-row">
+                    <div class="col-auto"><div class="small m-0 text-white">Copyright &copy; x-Zelcoders {{year}}</div></div>
+                    <div class="col-auto">
+                        <a class="link-light small" href="#">Privacy</a>
+                        <span class="text-white mx-1">&middot;</span>
+                        <a class="link-light small" href="#">Terms</a>
+                        <span class="text-white mx-1">&middot;</span>
+                        <a class="link-light small" href="#">Contact</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <!-- Bootstrap core JS-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Core theme JS-->
+        <script src="{{ url_for('static', filename='js/scripts-cta.js') }}"></script>
+        <script>
+            var elem = document.documentElement;
+
+            function openFullscreen() {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) { /* Safari */
+                    elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) { /* IE11 */
+                    elem.msRequestFullscreen();
+                } else if (elem.mozRequestFullScreen) { /* Firefox */
+                    elem.mozRequestFullScreen();
+                }
+            }
+
+            function closeFullscreen() {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { /* Safari */
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { /* IE11 */
+                    document.msExitFullscreen();
+                } else if (document.mozExitFullscreen) { /* Firefox */
+                    document.mozExitFullscreen();
+                }
+            }
+
+            function startTimer(durationInMinutes) {
+                let timer = durationInMinutes * 60;
+                const minutesDisplay = document.getElementById('minutes');
+                const secondsDisplay = document.getElementById('seconds');
+
+                function updateTimerDisplay() {
+                    const minutes = Math.floor(timer / 60);
+                    const seconds = timer % 60;
+                    minutesDisplay.textContent = String(minutes).padStart(2, '0');
+                    secondsDisplay.textContent = String(seconds).padStart(2, '0');
+
+                    if (timer < 300) {
+                        minutesDisplay.setAttribute("style", "color:red")
+                        secondsDisplay.setAttribute("style", "color:red")
+                    }
+
+                    if (timer <= 0) {
+                        clearInterval(interval);
+                        minutesDisplay.textContent = "00";
+                        secondsDisplay.textContent = "00";
+
+                        const button = document.getElementById('myButton');
+                        button.click();
+                        return;
+                    }
+                    timer--;
+                }
+
+                updateTimerDisplay();
+                const interval = setInterval(updateTimerDisplay, 1000);
+            }
+
+            document.addEventListener("DOMContentLoaded", function() {
+            // Your function call or code here
+                openFullscreen();
+                startTimer({{ exam_duration }});
+            });
+
+        </script>
+    </body>
+</html>

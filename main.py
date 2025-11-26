@@ -6,12 +6,13 @@ from flask import Flask, render_template, redirect, url_for, request, flash, abo
 from flask_bootstrap import Bootstrap5
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import Integer, String, Float
+from sqlalchemy import Integer, String, Float, Text
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from flask_login import UserMixin, login_user, LoginManager, current_user, logout_user, login_required
 
-from forms import LoginForm, RegisterForm, CoursesForm, ExamQuestionsForm, ResetStudentScoreForm, GcreeForm
+from forms import LoginForm, RegisterForm, CoursesForm, ExamQuestionsForm, ResetStudentScoreForm, GcreeForm, \
+    TerminalExamForm
 from smtplib import SMTP_SSL
 import os
 from functools import wraps
@@ -96,6 +97,37 @@ def my_login_required(f):
     return decorated_function
 
 
+def get_current_session():
+    load_records = db.session.execute(db.select(ZelTermDefine).where(ZelTermDefine.school_id == current_user.school_id)).scalars().all()
+    if not load_records:
+        return ""
+    for rec in load_records:
+        start_date = datetime.strptime(rec.start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(rec.end_date, '%Y-%m-%d').date()
+        today = datetime.now().date()
+        if start_date <= today <= end_date:
+            current_session = rec.session
+            return current_session
+
+    return load_records[-1].session
+
+
+def get_current_term():
+    load_records = db.session.execute(
+        db.select(ZelTermDefine).where(ZelTermDefine.school_id == current_user.school_id)).scalars().all()
+    if not load_records:
+        return ""
+    for rec in load_records:
+        start_date = datetime.strptime(rec.start_date, '%Y-%m-%d').date()
+        end_date = datetime.strptime(rec.end_date, '%Y-%m-%d').date()
+        today = datetime.now().date()
+        if start_date <= today <= end_date:
+            current_term = rec.term
+            return current_term
+
+    return load_records[-1].term
+
+
 # CREATE TABLE
 
 class User(UserMixin, db.Model):
@@ -110,6 +142,7 @@ class User(UserMixin, db.Model):
     results = relationship("Results", back_populates="user")
     course = relationship("Courses", back_populates="instructor")
     score = relationship("Scores", back_populates="user")
+
 
 class Questions(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -148,6 +181,22 @@ class Results(db.Model):
     question = relationship("Questions", back_populates="results")
 
 
+class ZelObjResults(db.Model):
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_user.id"))
+    subject_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_subject.id"))
+    question_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("question_pool_obj.id"))
+    selected_answer: Mapped[str] = mapped_column(String(1000), nullable=False)
+    correct_answer: Mapped[str] = mapped_column(String(1000), nullable=False)
+    term: Mapped[str] = mapped_column(String(50), nullable=False)
+    session: Mapped[str] = mapped_column(String(50), nullable=False)
+    classroom_id: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    user = relationship("ZelUser", back_populates="obj_results")
+    subject = relationship("ZelSubject", back_populates="obj_results")
+    question = relationship("QuestionPoolObj", back_populates="obj_results")
+
+
 class Scores(db.Model):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("user.id"))
@@ -168,6 +217,7 @@ class ZelSchool(db.Model):
     email: Mapped[str] = mapped_column(String(100), nullable=True)
     code: Mapped[str] = mapped_column(String(10), nullable=False, unique=True)
     logo: Mapped[str] = mapped_column(String(100), nullable=False)
+    phone: Mapped[str] = mapped_column(String(50), nullable=True)
 
     students = relationship("ZelUser", back_populates="school")
     classrooms = relationship("ZelClassroom", back_populates="school")
@@ -224,8 +274,9 @@ class ZelUser(UserMixin, db.Model):
     talent_or_interest: Mapped[str] = mapped_column(String(250), nullable=True)
     pickup_person: Mapped[str] = mapped_column(String(100), nullable=True)
     school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_school.id"), nullable=True)
-    classroom: Mapped[str] = mapped_column(String(100), nullable=True)
     status: Mapped[str] = mapped_column(String(50), nullable=False)
+    class_variant: Mapped[str] = mapped_column(String(50), nullable=True)
+    classroom_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_classroom.id"), nullable=True)
 
     school = relationship("ZelSchool", back_populates="students")
     subjects = relationship("ZelUserSubject", back_populates="users")
@@ -233,6 +284,8 @@ class ZelUser(UserMixin, db.Model):
     results = relationship("ZelResult", back_populates="student")
     class_teacher = relationship("ZelAttendance", back_populates="teacher")
     log = relationship("ZelLog", back_populates="user")
+    classroom = relationship("ZelClassroom", back_populates="user")
+    obj_results = relationship("ZelObjResults", back_populates="user")
 
 
 class ZelClassroom(db.Model):
@@ -244,6 +297,8 @@ class ZelClassroom(db.Model):
     school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_school.id"), nullable=True)
 
     school = relationship("ZelSchool", back_populates="classrooms")
+    user = relationship("ZelUser", back_populates="classroom")
+    class_subjects = relationship("ZelClassSubjects", back_populates="classroom")
 
 
 class ZelSubject(db.Model):
@@ -254,20 +309,21 @@ class ZelSubject(db.Model):
     description: Mapped[str] = mapped_column(String(1000), nullable=True)
 
     obj_question = relationship("ZelObjQuestions", back_populates="subject")
+    obj_results = relationship("ZelObjResults", back_populates="subject")
 
 
 class ZelUserClassroom(db.Model):
     __tablename__ = "zel_user_classroom"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[str] = mapped_column(String(100), nullable=False)
-    current_classroom_name: Mapped[str] = mapped_column(String(100), nullable=True)
-    classroom2_name: Mapped[str] = mapped_column(String(100), nullable=True)
-    classroom3_name: Mapped[str] = mapped_column(String(100), nullable=True)
-    classroom4_name: Mapped[str] = mapped_column(String(100), nullable=True)
-    classroom5_name: Mapped[str] = mapped_column(String(100), nullable=True)
-    classroom6_name: Mapped[str] = mapped_column(String(100), nullable=True)
-    classroom7_name: Mapped[str] = mapped_column(String(100), nullable=True)
-    classroom8_name: Mapped[str] = mapped_column(String(100), nullable=True)
+    current_classroom_name: Mapped[int] = mapped_column(Integer, nullable=True)
+    classroom2_name: Mapped[int] = mapped_column(Integer, nullable=True)
+    classroom3_name: Mapped[int] = mapped_column(Integer, nullable=True)
+    classroom4_name: Mapped[int] = mapped_column(Integer, nullable=True)
+    classroom5_name: Mapped[int] = mapped_column(Integer, nullable=True)
+    classroom6_name: Mapped[int] = mapped_column(Integer, nullable=True)
+    classroom7_name: Mapped[int] = mapped_column(Integer, nullable=True)
+    classroom8_name: Mapped[int] = mapped_column(Integer, nullable=True)
 
 
 class ZelUserSubject(db.Model):
@@ -279,7 +335,6 @@ class ZelUserSubject(db.Model):
     subject_list: Mapped[str] = mapped_column(String(1000), nullable=True)
 
     users = relationship("ZelUser", back_populates="subjects")
-    results = relationship("ZelResult", back_populates="subject")
 
 
 class ZelFees(db.Model):
@@ -288,7 +343,7 @@ class ZelFees(db.Model):
     fee_type: Mapped[str] = mapped_column(String(100), nullable=False)
     school_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_school.id"), nullable=False)
     amount: Mapped[float] = mapped_column(Float, nullable=False)
-    grade: Mapped[str] = mapped_column(String(100), nullable=False)
+    grade: Mapped[int] = mapped_column(Integer, nullable=False)
     term: Mapped[str] = mapped_column(String(100), nullable=False)
     session: Mapped[str] = mapped_column(String(100), nullable=False)
 
@@ -332,7 +387,7 @@ class ZelResult(db.Model):
     __tablename__ = "zel_result"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     student_id: Mapped[str] = mapped_column(String(100), db.ForeignKey("zel_user.id"))
-    subject_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_user_subject.id"))
+    subject_id: Mapped[int] = mapped_column(Integer)
     ca1: Mapped[float] = mapped_column(Float, nullable=True)
     ca2: Mapped[float] = mapped_column(Float, nullable=True)
     ca3: Mapped[float] = mapped_column(Float, nullable=True)
@@ -350,7 +405,6 @@ class ZelResult(db.Model):
     session: Mapped[str] = mapped_column(String(100))
 
     student = relationship("ZelUser", back_populates="results")
-    subject = relationship("ZelUserSubject", back_populates="results")
 
 
 class ZelAttendance(db.Model):
@@ -363,6 +417,19 @@ class ZelAttendance(db.Model):
     classroom: Mapped[str] = mapped_column(String(100))
 
     teacher = relationship("ZelUser", back_populates="class_teacher")
+
+
+class ZelAttendanceNew(db.Model):
+    __tablename__ = "zel_attendance_new"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    student_id: Mapped[str] = mapped_column(String(100))
+    date: Mapped[str] = mapped_column(String(100), nullable=False)
+    status: Mapped[str] = mapped_column(String(100), nullable=False)
+    teacher_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    classroom_id: Mapped[int] = mapped_column(Integer)
+    term: Mapped[str] = mapped_column(String(100))
+    session: Mapped[str] = mapped_column(String(100))
+    time_captured: Mapped[int] = mapped_column(Integer, nullable=True)
 
 
 class ZelIssues(db.Model):
@@ -397,7 +464,7 @@ class ZelLog(db.Model):
     current_page: Mapped[str] = mapped_column(String(50), nullable=False)
     date: Mapped[str] = mapped_column(String(50), nullable=False)
     time: Mapped[str] = mapped_column(String(50), nullable=False)
-    activity: Mapped[str] = mapped_column(String(50), nullable=True)
+    activity: Mapped[str] = mapped_column(String(500), nullable=True)
 
     user = relationship("ZelUser", back_populates="log")
 
@@ -416,6 +483,118 @@ class ZelObjQuestions(db.Model):
 
     subject = relationship("ZelSubject", back_populates="obj_question")
     school = relationship("ZelSchool", back_populates="obj_question")
+
+
+class ZelTermDefine(db.Model):
+    __tablename__ = "zel_term_define"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    term: Mapped[str] = mapped_column(String(100), nullable=False)
+    session: Mapped[str] = mapped_column(String(100), nullable=False)
+    start_date: Mapped[str] = mapped_column(String(100), nullable=False)
+    end_date: Mapped[str] = mapped_column(String(100), nullable=False)
+    school_id: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class ZelPublicHoliday(db.Model):
+    __tablename__ = "zel_public_holiday"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    date: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str] = mapped_column(String(100), nullable=False)
+
+
+class ZelClassSubjects(db.Model):
+    __tablename__ = "zel_class_subjects"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    school_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    subjects_list: Mapped[str] = mapped_column(String(500), nullable=False)
+    class_variant: Mapped[str] = mapped_column(String(50), nullable=True)
+    classroom_id: Mapped[int] = mapped_column(Integer, db.ForeignKey("zel_classroom.id"), nullable=True)
+
+    classroom = relationship("ZelClassroom", back_populates="class_subjects")
+
+
+class ZelPsychomotor(db.Model):
+    __tablename__ = "zel_psychomotor"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    student_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    classroom: Mapped[str] = mapped_column(String(100), nullable=False)
+    term: Mapped[str] = mapped_column(String(50), nullable=False)
+    session: Mapped[str] = mapped_column(String(50), nullable=False)
+    class_participation: Mapped[str] = mapped_column(String(50), nullable=True)
+    homework: Mapped[str] = mapped_column(String(50), nullable=True)
+    project: Mapped[str] = mapped_column(String(50), nullable=True)
+    leadership: Mapped[str] = mapped_column(String(50), nullable=True)
+    neatness: Mapped[str] = mapped_column(String(50), nullable=True)
+    politeness: Mapped[str] = mapped_column(String(50), nullable=True)
+    punctuality: Mapped[str] = mapped_column(String(50), nullable=True)
+    interaction: Mapped[str] = mapped_column(String(50), nullable=True)
+    responsibility: Mapped[str] = mapped_column(String(50), nullable=True)
+    creativity: Mapped[str] = mapped_column(String(50), nullable=True)
+    christ_likeness: Mapped[str] = mapped_column(String(50), nullable=True)
+    honesty: Mapped[str] = mapped_column(String(50), nullable=True)
+    self_control: Mapped[str] = mapped_column(String(50), nullable=True)
+    teacher_comment: Mapped[str] = mapped_column(String(500), nullable=True)
+
+
+class ExamQuestionsObj(db.Model):
+    __tablename__ = 'exam_questions_obj'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    class_grade: Mapped[int] = mapped_column(Integer, nullable=False)
+    subject_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    school_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    term: Mapped[str] = mapped_column(String(50), nullable=False)
+    session: Mapped[str] = mapped_column(String(50), nullable=False)
+    question_id: Mapped[str] = mapped_column(String(500), nullable=True)
+    exam_date: Mapped[str] = mapped_column(String(50), nullable=False)
+    exam_time: Mapped[str] = mapped_column(String(50), nullable=False)
+    duration: Mapped[int] = mapped_column(Integer, nullable=False)
+    weight: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class ExamQuestionsTheory(db.Model):
+    __tablename__ = 'exam_questions_theory'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    class_grade: Mapped[int] = mapped_column(Integer, nullable=False)
+    subject_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    school_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    term: Mapped[str] = mapped_column(String(50), nullable=False)
+    session: Mapped[str] = mapped_column(String(50), nullable=False)
+    question_id: Mapped[str] = mapped_column(String(500), nullable=True)
+    exam_date: Mapped[str] = mapped_column(String(50), nullable=False)
+    exam_time: Mapped[str] = mapped_column(String(50), nullable=False)
+    duration: Mapped[int] = mapped_column(Integer, nullable=False)
+    weight: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class QuestionPoolObj(db.Model):
+    __tablename__ = 'question_pool_obj'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    subject_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    class_grade: Mapped[int] = mapped_column(Integer, nullable=False)
+    topic: Mapped[str] = mapped_column(String(500), nullable=False)
+    sub_topic: Mapped[str] = mapped_column(String(500), nullable=True)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    correct_option: Mapped[str] = mapped_column(String(500), nullable=False)
+    options: Mapped[str] = mapped_column(String(500), nullable=False)
+    question_background_id: Mapped[int] = mapped_column(Integer, db.ForeignKey('question_background.id'))
+    user_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    question_source: Mapped[str] = mapped_column(String(50), nullable=True)
+    question_year: Mapped[int] = mapped_column(Integer, nullable=True)
+    question_type: Mapped[str] = mapped_column(String(50), nullable=True)
+
+    question_background = relationship("QuestionBackground", back_populates="child_question")
+    exam_questions_obj = relationship("ExamQuestionsObj", back_populates="question")
+    obj_results = relationship("ZelObjResults", back_populates="question")
+
+
+class QuestionBackground(db.Model):
+    __tablename__ = 'question_background'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    subject_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    question_background: Mapped[str] = mapped_column(Text, nullable=False)
+
+    child_question = relationship("QuestionPoolObj", back_populates="question_background")
+
 
 with app.app_context():
     db.create_all()
@@ -1000,10 +1179,171 @@ def instructions_gcree():
     return render_template("instruction-gcree.html", company_name=company_name, filename="assets/img/gcra_logo2.png", title="Entrance Exam Instructions", form=entrance_form)
 
 
+@app.route("/exam/<school_code>", methods=["GET", "POST"])
+def instructions_gcr(school_code):
+    sch_code = school_code.upper()
+    school_details = db.session.execute(db.select(ZelSchool).where(ZelSchool.code == sch_code)).scalar()
+    school_name = school_details.name
+    pre_exam_form = TerminalExamForm()
+    if pre_exam_form.validate_on_submit():
+        exam_number = int(pre_exam_form.student_id.data)
+        student_id = f"{sch_code}-S-{exam_number}"
+        user = db.get_or_404(ZelUser, student_id)
+        login_user(user)
+
+        return redirect(url_for("term_exam_gcr"))
+    return render_template("instruction-gcree.html", company_name=school_name,
+                           filename="assets/img/gcra_logo2.png", title="Entrance Exam Instructions", form=pre_exam_form)
+
+
+@app.route("/term-exam/<subject_id>", methods=["GET", "POST"])
+@login_required
+def term_exam_obj(subject_id):
+    if not current_user.is_authenticated:
+        return abort(401)
+    student_id = current_user.id
+    school_code = student_id[0:3]
+    school_name = current_user.school.name
+    school_id = current_user.school.id
+    student_classroom_id = current_user.classroom_id
+    class_grade = db.session.execute(db.select(ZelClassroom).where(ZelClassroom.id == student_classroom_id)).scalar().grade
+
+    today_exam = db.session.execute(db.select(ExamQuestionsObj).where(
+        ExamQuestionsObj.class_grade == class_grade, ExamQuestionsObj.subject_id == subject_id,
+        ExamQuestionsObj.school_id == school_id, ExamQuestionsObj.term == get_current_term(),
+        ExamQuestionsObj.session == get_current_session()
+    )).scalar()
+
+    if datetime.strptime(today_exam.exam_date, '%Y-%m-%d').date() != datetime.now().date():
+        flash("Exam is not available yet.")
+        return redirect(url_for("instructions_gcr", school_code=school_code))
+
+    questions_list = today_exam.question_id.split(";")
+    exam_duration = today_exam.duration
+    exam_weight = today_exam.weight
+
+    exam_dict = []
+    already_selected_q_id = []
+    for q_id in questions_list:
+        q_id_int = int(q_id)
+        question = db.session.execute(db.select(QuestionPoolObj).where(QuestionPoolObj.id == q_id_int)).scalar()
+        if question.question_background_id is not None:
+            already_selected_q_id.append(q_id_int)
+            question_background_id = question.question_background_id
+            question_background = db.session.execute(db.select(QuestionBackground).where(
+                QuestionBackground.id == question_background_id)).scalar()
+            new_question = {
+                "question_no": already_selected_q_id.index(q_id_int) + 1,
+                "question_id": q_id_int,
+                "question": question.question,
+                "correct_option": question.correct_option,
+                "options": random.shuffle(question.options.split(";")),
+                "question_background": question_background.question_background
+            }
+            exam_dict.append(new_question)
+
+            # get all questions with the same question background
+            questions_with_same_bg = db.session.execute(db.select(QuestionPoolObj).where(
+                QuestionPoolObj.question_background_id == question_background_id
+            )).scalars().all()
+            for q in questions_with_same_bg:
+                if q.id not in already_selected_q_id:
+                    already_selected_q_id.append(q.id)
+                    new_question = {
+                        "question_no": already_selected_q_id.index(q.id) + 1,
+                        "question_id": q.id,
+                        "question": q.question,
+                        "correct_option": q.correct_option,
+                        "options": random.shuffle(q.options.split(";")),
+                        "question_background": None
+                    }
+                    exam_dict.append(new_question)
+        else:
+            already_selected_q_id.append(q_id_int)
+            new_question = {
+                "question_no": already_selected_q_id.index(q_id_int) + 1,
+                "question_id": q_id_int,
+                "question": question.question,
+                "correct_option": question.correct_option,
+                "options": random.shuffle(question.options.split(";")),
+                "question_background": None
+            }
+            exam_dict.append(new_question)
+
+    subject = db.session.execute(db.select(ZelSubject).where(ZelSubject.id == subject_id)).scalar()
+
+    if request.method == "POST":
+        subject_id = subject.id
+        user_id = current_user.id
+
+        results = db.session.execute(
+            db.select(ZelObjResults).where(ZelObjResults.user_id == user_id, ZelObjResults.subject_id == subject_id)).scalars().all()
+
+        if results:
+            for result in results:
+                db.session.delete(result)
+                db.session.commit()
+
+        for i in range(len(exam_dict)):
+            if request.form.get(f"question_{i + 1}") is None:
+                selected_answer = "Not answered"
+            else:
+                selected_answer = request.form.get(f"question_{i + 1}")
+            correct_option = exam_dict[i]["correct_option"]
+            question_id = exam_dict[i]["question_id"]
+
+            new_result = ZelObjResults()
+            new_result.user_id = user_id
+            new_result.subject_id = subject_id
+            new_result.question_id = question_id
+            new_result.selected_answer = selected_answer
+            new_result.correct_answer = correct_option
+            new_result.term = get_current_term()
+            new_result.session = get_current_session()
+            new_result.classroom_id = current_user.classroom_id
+
+            db.session.add(new_result)
+            db.session.commit()
+
+        score_calc = db.session.execute(db.select(ZelObjResults).where(
+            ZelObjResults.user_id == current_user.id, ZelObjResults.subject_id == subject_id,
+            ZelObjResults.term == get_current_term(), ZelObjResults.session == get_current_session()
+        )).scalars().all()
+
+        student_score = 0
+        for result in score_calc:
+            if result.selected_answer == result.correct_answer:
+                student_score += 1
+
+        student_subject_record = db.session.execute(db.select(ZelResult).where(
+            ZelResult.student_id == current_user.id, ZelResult.subject_id == subject_id,
+            ZelResult.term == get_current_term(), ZelResult.session == get_current_session()
+        )).scalar()
+
+        student_subject_record.exam_obj_score = student_score
+
+        adjusted_exam_obj_score = (student_score/len(exam_dict)) * exam_weight
+        student_subject_record.adjusted_exam_obj_score = round(adjusted_exam_obj_score, 1)
+
+        db.session.commit()
+
+        return redirect(url_for('term_exam_theory', subject_id=subject_id))
+
+    return render_template("exams-obj.html", questions=exam_dict, year=this_year,
+                           title=f"{subject.subject_name} Objective Exam", subject=subject, company_name=school_name,
+                           filename="assets/img/gcra_logo2.png", exam_duration=exam_duration, exam_weight=exam_weight)
+
+
 @app.route("/gcree/logout")
 def logout_gcree():
     logout_user()
     return redirect(url_for('instructions_gcree'))
+
+
+@app.route("/gcr/logout")
+def logout_gcr():
+    logout_user()
+    return redirect(url_for('instructions_gcr'))
 
 
 @app.route("/CTA/delete_question")

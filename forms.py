@@ -49,3 +49,8 @@ class GcreeForm(FlaskForm):
     age = IntegerField("Age", validators=[DataRequired()])
     submit = SubmitField("Proceed to Examination")
 
+
+class TerminalExamForm(FlaskForm):
+    student_id = IntegerField("Enter Exam Number", validators=[DataRequired()])
+    submit = SubmitField("Proceed to Examination")
+

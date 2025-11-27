@@ -1204,7 +1204,25 @@ def instructions_gcr(school_code):
         user = db.get_or_404(ZelUser, student_id)
         login_user(user)
 
-        return redirect(url_for("term_exam_obj"))
+        student_id = current_user.id
+        school_code = student_id[0:3]
+        school_name = current_user.school.name
+        school_id = current_user.school.id
+        student_classroom_id = current_user.classroom_id
+        class_grade = db.session.execute(
+            db.select(ZelClassroom).where(ZelClassroom.id == student_classroom_id)).scalar().grade
+
+        today_exam = db.session.execute(db.select(ExamQuestionsObj).where(
+            ExamQuestionsObj.class_grade == class_grade, ExamQuestionsObj.exam_date == datetime.strftime(datetime.now().date(), '%Y-%m-%d'),
+            ExamQuestionsObj.school_id == school_id, ExamQuestionsObj.term == get_current_term(),
+            ExamQuestionsObj.session == get_current_session()
+        )).scalar()
+
+        if not today_exam:
+            flash('You have no CBT exams to write today.')
+            return redirect(url_for('instructions_gcr', school_code=school_code))
+
+        return redirect(url_for("term_exam_obj", subject_id=today_exam.subject_id))
     return render_template("instruction-gcree.html", company_name=school_name,
                            filename="assets/img/gcra_logo2.png", title="Exam Instructions", form=pre_exam_form)
 

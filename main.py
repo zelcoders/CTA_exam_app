@@ -586,6 +586,20 @@ class QuestionPoolObj(db.Model):
     obj_results = relationship("ZelObjResults", back_populates="question")
 
 
+class QuestionPoolTheory(db.Model):
+    __tablename__ = 'question_pool_theory'
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    subject_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    class_grade: Mapped[int] = mapped_column(Integer, nullable=False)
+    topic: Mapped[str] = mapped_column(String(500), nullable=False)
+    sub_topic: Mapped[str] = mapped_column(String(500), nullable=True)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    user_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    question_source: Mapped[str] = mapped_column(String(50), nullable=True)
+    question_year: Mapped[int] = mapped_column(Integer, nullable=True)
+    question_type: Mapped[str] = mapped_column(String(50), nullable=True)
+
+
 class QuestionBackground(db.Model):
     __tablename__ = 'question_background'
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

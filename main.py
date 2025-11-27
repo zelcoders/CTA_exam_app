@@ -32,7 +32,7 @@ this_year = datetime.today().year
 
 @login_manager.user_loader
 def load_user(user_id):
-    return db.get_or_404(User, user_id)
+    return db.get_or_404(ZelUser, user_id)
 
 # CREATE DB
 class Base(DeclarativeBase):

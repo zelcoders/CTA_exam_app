@@ -1412,7 +1412,7 @@ def logout_gcree():
 @app.route("/gcr/logout")
 def logout_gcr():
     logout_user()
-    return redirect(url_for('instructions_gcr', user_id=user_id, subject_id=subject_id))
+    return redirect(url_for('instructions_gcr'))
 
 
 @app.route('/gcr/check-result')

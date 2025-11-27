@@ -1204,7 +1204,7 @@ def instructions_gcr(school_code):
         user = db.get_or_404(ZelUser, student_id)
         login_user(user)
 
-        return redirect(url_for("term_exam_gcr"))
+        return redirect(url_for("term_exam_obj"))
     return render_template("instruction-gcree.html", company_name=school_name,
                            filename="assets/img/gcra_logo2.png", title="Exam Instructions", form=pre_exam_form)
 

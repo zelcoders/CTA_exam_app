@@ -1222,14 +1222,15 @@ def instructions_gcr(school_code):
             flash('You have no CBT exams to write today.')
             return redirect(url_for('instructions_gcr', school_code=school_code))
 
-        return redirect(url_for("term_exam_obj", subject_id=today_exam.subject_id))
+        return redirect(url_for("term_exam_obj", subject_id=f'{today_exam.subject_id}'))
     return render_template("instruction-gcree.html", company_name=school_name,
                            filename="assets/img/gcra_logo2.png", title="Exam Instructions", form=pre_exam_form)
 
 
-@app.route("/term-exam/<subject_id>", methods=["GET", "POST"])
+@app.route("/term-exam", methods=["GET", "POST"])
 @login_required
-def term_exam_obj(subject_id):
+def term_exam_obj():
+    subject_id = int(request.args.get('subject_id'))
     if not current_user.is_authenticated:
         return abort(401)
     student_id = current_user.id

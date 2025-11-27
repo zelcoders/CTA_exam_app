@@ -1419,8 +1419,9 @@ def logout_gcree():
 
 @app.route("/gcr/logout")
 def logout_gcr():
+    school_code = current_user.id[0:3].lower()
     logout_user()
-    return redirect(url_for('instructions_gcr'))
+    return redirect(url_for('instructions_gcr', school_code=school_code))
 
 
 @app.route('/gcr/check-result')

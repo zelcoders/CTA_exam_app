@@ -55,7 +55,7 @@
                                     {% endwith %}
                                     <div class="card-body">
 
-                                        <form method="post" action="{{ url_for('term_exam_obj') }}">
+                                        <form method="post" action="{{ url_for('term_exam_obj', subject_id=subject_id) }}">
                                             {% for question in questions %}
                                             {% if question['question_background'] is not None %}
                                             <p>{{ question['question_background']|safe }}</p>

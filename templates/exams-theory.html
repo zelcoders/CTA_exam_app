@@ -26,7 +26,7 @@
                     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
                     <div class="collapse navbar-collapse" id="navbarSupportedContent">
                         <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
-                            <li class="nav-item"></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('check_result_gcr', subject_id=subject_id) }}" id="myButton">Click here to finish exam</a></li>
                         </ul>
                     </div>
                 </div>
@@ -54,22 +54,7 @@
                                     {% endif %}
                                     {% endwith %}
                                     <div class="card-body">
-
-                                        <form method="post" action="{{ url_for('term_exam_obj') }}">
-                                            {% for question in questions %}
-                                            {% if question['question_background'] is not None %}
-                                            <p>{{ question['question_background']|safe }}</p>
-                                            {% endif %}
-                                            <p>{{ question['question_no'] }}. {{ question['question']|safe }}</p>
-                                            {% for option in question['options'] %}
-                                            <input type="radio" name="question_{{ question['question_no'] }}" value="{{ option }}">{{ option }}<br>
-                                            {% endfor %}
-                                            <br><br>
-                                            {% endfor %}
-                                            <div class="d-flex align-items-center justify-content-between mt-4 mb-0">
-                                                <button type="submit" id="myButton">Submit</button>
-                                            </div>
-                                        </form>
+                                        <p>{{ question.question|safe }}</p>
                                     </div>
                                 </div>
                             </div>

@@ -34,7 +34,7 @@
                             {% endif %}
                             {% if current_user.is_authenticated: %}
                             <li class="nav-item"><a class="nav-link" href="#">Dashboard</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ url_for('logout_gcree') }}">Logout</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('logout_gcr') }}">Logout</a></li>
                             {% endif %}
                         </ul>
                     </div>
@@ -65,7 +65,7 @@
 
                                 {% endfor %}
 
-                                <p><span style="font-style:italic;"><strong>Total Score: {{ score }}%<br>{{ remark }}</strong></span></p>
+                                <p><span style="font-style:italic;"><strong>Total Score: {{ score }}<br></strong></span></p>
                                 {% endif %}
                             </div>
                         </div>

@@ -1231,7 +1231,7 @@ def term_exam_obj(subject_id):
         flash("Exam is not available yet.")
         return redirect(url_for("instructions_gcr", school_code=school_code))
 
-    questions_list = today_exam.question_id.split(";")
+    questions_list = today_exam.question_id.split("`")
     exam_duration = today_exam.duration
     exam_weight = today_exam.weight
 
@@ -1347,6 +1347,44 @@ def term_exam_obj(subject_id):
                            filename="assets/img/gcra_logo2.png", exam_duration=exam_duration, exam_weight=exam_weight)
 
 
+@app.route("/term-exam-t/<subject_id>", methods=["GET", "POST"])
+@login_required
+def term_exam_theory(subject_id):
+    if not current_user.is_authenticated:
+        return abort(401)
+    student_id = current_user.id
+    school_code = student_id[0:3]
+    school_name = current_user.school.name
+    school_id = current_user.school.id
+    student_classroom_id = current_user.classroom_id
+    class_grade = db.session.execute(db.select(ZelClassroom).where(ZelClassroom.id == student_classroom_id)).scalar().grade
+
+    today_exam = db.session.execute(db.select(ExamQuestionsTheory).where(
+        ExamQuestionsTheory.class_grade == class_grade, ExamQuestionsTheory.subject_id == subject_id,
+        ExamQuestionsTheory.school_id == school_id, ExamQuestionsTheory.term == get_current_term(),
+        ExamQuestionsTheory.session == get_current_session()
+    )).scalar()
+
+    if datetime.strptime(today_exam.exam_date, '%Y-%m-%d').date() != datetime.now().date():
+        flash("Exam is not available yet.")
+        return redirect(url_for("instructions_gcr", school_code=school_code))
+
+    questions_list = today_exam.question_id
+    exam_duration = today_exam.duration
+    exam_weight = today_exam.weight
+
+    q_id_int = int(questions_list)
+    question = db.session.execute(db.select(QuestionPoolTheory).where(QuestionPoolTheory.id == q_id_int)).scalar()
+
+        # get all questions with the same question background
+
+    subject = db.session.execute(db.select(ZelSubject).where(ZelSubject.id == subject_id)).scalar()
+
+    return render_template("exams-theory.html", question=question, year=this_year, subject_id=subject_id,
+                           title=f"{subject.subject_name} Theory Exam", subject=subject, company_name=school_name,
+                           filename="assets/img/gcra_logo2.png", exam_duration=exam_duration, exam_weight=exam_weight)
+
+
 @app.route("/gcree/logout")
 def logout_gcree():
     logout_user()
@@ -1356,7 +1394,28 @@ def logout_gcree():
 @app.route("/gcr/logout")
 def logout_gcr():
     logout_user()
-    return redirect(url_for('instructions_gcr'))
+    return redirect(url_for('instructions_gcr', user_id=user_id, subject_id=subject_id))
+
+
+@app.route('/gcr/check-result')
+@login_required
+def check_result_gcr():
+    subject_id = request.args.get('subject_id')
+
+    score_calc = db.session.execute(db.select(ZelObjResults).where(
+        ZelObjResults.user_id == current_user.id, ZelObjResults.term == get_current_term(),
+        ZelObjResults.subject_id == subject_id, ZelObjResults.session == get_current_session()
+    )).scalars().all()
+
+    student_score = 0
+    for result in score_calc:
+        if result.selected_answer == result.correct_answer:
+            student_score += 1
+
+    company_name = current_user.school.name
+
+    return render_template("check_result.html", title="Entrance Exam Results", company_name=company_name,
+                           results=score_calc, score=f'{student_score}', filename="assets/img/gcra_logo2.png")
 
 
 @app.route("/CTA/delete_question")

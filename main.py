@@ -1286,7 +1286,7 @@ def term_exam_obj(subject_id):
                         "question": q.question,
                         "correct_option": q.correct_option,
                         "options": random.shuffle(q.options.split("`")),
-                        "question_background": None
+                        "question_background": ""
                     }
                     exam_dict.append(new_question)
         else:
@@ -1297,7 +1297,7 @@ def term_exam_obj(subject_id):
                 "question": question.question,
                 "correct_option": question.correct_option,
                 "options": random.shuffle(question.options.split("`")),
-                "question_background": None
+                "question_background": ""
             }
             exam_dict.append(new_question)
 

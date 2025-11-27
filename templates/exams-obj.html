@@ -57,7 +57,7 @@
 
                                         <form method="post" action="{{ url_for('term_exam_obj', subject_id=subject_id) }}">
                                             {% for question in questions %}
-                                            {% if question['question_background'] is not None %}
+                                            {% if question['question_background'] != "" %}
                                             <p>{{ question['question_background']|safe }}</p>
                                             {% endif %}
                                             <p>{{ question['question_no'] }}. {{ question['question']|safe }}</p>

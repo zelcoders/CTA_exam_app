@@ -1258,7 +1258,7 @@ def term_exam_obj(subject_id):
     for q_id in questions_list:
         q_id_int = int(q_id)
         question = db.session.execute(db.select(QuestionPoolObj).where(QuestionPoolObj.id == q_id_int)).scalar()
-        if question.question_background_id is not None:
+        if question.question_background_id is not None and question.id not in already_selected_q_id:
             already_selected_q_id.append(q_id_int)
             question_background_id = question.question_background_id
             question_background = db.session.execute(db.select(QuestionBackground).where(
@@ -1294,18 +1294,19 @@ def term_exam_obj(subject_id):
                     }
                     exam_dict.append(new_question)
         else:
-            already_selected_q_id.append(q_id_int)
-            question_options = question.options.split("`")
-            random.shuffle(question_options)
-            new_question = {
-                "question_no": already_selected_q_id.index(q_id_int) + 1,
-                "question_id": q_id_int,
-                "question": question.question,
-                "correct_option": question.correct_option,
-                "options": question_options,
-                "question_background": ""
-            }
-            exam_dict.append(new_question)
+            if q_id_int not in already_selected_q_id:
+                already_selected_q_id.append(q_id_int)
+                question_options = question.options.split("`")
+                random.shuffle(question_options)
+                new_question = {
+                    "question_no": already_selected_q_id.index(q_id_int) + 1,
+                    "question_id": q_id_int,
+                    "question": question.question,
+                    "correct_option": question.correct_option,
+                    "options": question_options,
+                    "question_background": ""
+                }
+                exam_dict.append(new_question)
 
     subject = db.session.execute(db.select(ZelSubject).where(ZelSubject.id == subject_id)).scalar()
 

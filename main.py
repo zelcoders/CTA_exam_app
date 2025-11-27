@@ -1263,12 +1263,14 @@ def term_exam_obj(subject_id):
             question_background_id = question.question_background_id
             question_background = db.session.execute(db.select(QuestionBackground).where(
                 QuestionBackground.id == question_background_id)).scalar()
+            question_options = question.options.split("`")
+            random.shuffle(question_options)
             new_question = {
                 "question_no": already_selected_q_id.index(q_id_int) + 1,
                 "question_id": q_id_int,
                 "question": question.question,
                 "correct_option": question.correct_option,
-                "options": random.shuffle(question.options.split("`")),
+                "options": question_options,
                 "question_background": question_background.question_background
             }
             exam_dict.append(new_question)
@@ -1280,23 +1282,27 @@ def term_exam_obj(subject_id):
             for q in questions_with_same_bg:
                 if q.id not in already_selected_q_id:
                     already_selected_q_id.append(q.id)
+                    question_options = q.options.split("`")
+                    random.shuffle(question_options)
                     new_question = {
                         "question_no": already_selected_q_id.index(q.id) + 1,
                         "question_id": q.id,
                         "question": q.question,
                         "correct_option": q.correct_option,
-                        "options": random.shuffle(q.options.split("`")),
+                        "options": question_options,
                         "question_background": ""
                     }
                     exam_dict.append(new_question)
         else:
             already_selected_q_id.append(q_id_int)
+            question_options = question.options.split("`")
+            random.shuffle(question_options)
             new_question = {
                 "question_no": already_selected_q_id.index(q_id_int) + 1,
                 "question_id": q_id_int,
                 "question": question.question,
                 "correct_option": question.correct_option,
-                "options": random.shuffle(question.options.split("`")),
+                "options": question_options,
                 "question_background": ""
             }
             exam_dict.append(new_question)

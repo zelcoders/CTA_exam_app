@@ -1206,7 +1206,7 @@ def instructions_gcr(school_code):
 
         return redirect(url_for("term_exam_gcr"))
     return render_template("instruction-gcree.html", company_name=school_name,
-                           filename="assets/img/gcra_logo2.png", title="Entrance Exam Instructions", form=pre_exam_form)
+                           filename="assets/img/gcra_logo2.png", title="Exam Instructions", form=pre_exam_form)
 
 
 @app.route("/term-exam/<subject_id>", methods=["GET", "POST"])

@@ -1217,11 +1217,20 @@ def instructions_gcr(school_code):
             ExamQuestionsObj.class_grade == class_grade, ExamQuestionsObj.exam_date == datetime.strftime(datetime.now().date(), '%Y-%m-%d'),
             ExamQuestionsObj.school_id == school_id, ExamQuestionsObj.term == get_current_term(),
             ExamQuestionsObj.session == get_current_session()
-        )).scalar()
+        )).scalars().all()
 
         if not today_exam:
             flash('You have no CBT exams to write today.')
             return redirect(url_for('instructions_gcr', school_code=school_code))
+        else:
+            exams_list = []
+            for exam_sub in today_exam:
+                subj_id = exam_sub.subject_id
+                subject_rec = db.get_or_404(ZelSubject, subj_id)
+                subject_name = subject_rec.subject_name
+                exams_list.append({'subject_id': subj_id, 'subject_name': subject_name})
+            return render_template('select.html', company_name=school_name, filename="assets/img/gcra_logo2.png",
+                                   exams=exams_list, title="Select Subject",)
 
         return redirect(url_for("term_exam_obj", subject_id=today_exam.subject_id))
     return render_template("instruction-gcree.html", company_name=school_name,
@@ -1245,6 +1254,8 @@ def term_exam_obj(subject_id):
         ExamQuestionsObj.school_id == school_id, ExamQuestionsObj.term == get_current_term(),
         ExamQuestionsObj.session == get_current_session()
     )).scalar()
+
+
 
     if datetime.strptime(today_exam.exam_date, '%Y-%m-%d').date() != datetime.now().date():
         flash("Exam is not available yet.")

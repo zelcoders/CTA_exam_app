@@ -162,6 +162,19 @@
                 startTimer({{ exam_duration }});
             });
 
+            document.addEventListener('keydown', function(event) {
+                // Check if the currently focused element is a radio button
+                if (document.activeElement && document.activeElement.type === 'radio') {
+                    // Check if the pressed key is an arrow key
+                    if (event.key === 'ArrowUp' || event.key === 'ArrowDown' ||
+                        event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+
+                        // Prevent the default action of the arrow key
+                        event.preventDefault();
+                    }
+                }
+            });
+
         </script>
     </body>
 </html>

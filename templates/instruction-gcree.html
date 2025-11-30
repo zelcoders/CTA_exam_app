@@ -42,6 +42,13 @@
             </nav>
             <!-- Page content-->
             <section class="py-5">
+                {% with messages = get_flashed_messages() %}
+                                    {% if messages %}
+                                    {% for message in messages %}
+                                    <p style="color:red; font-style:italic; text-align:center">{{ message }}</p>
+                                    {% endfor %}
+                                    {% endif %}
+                                    {% endwith %}
                 <div class="container px-5">
                     <!-- Contact form-->
                     <div class="bg-light rounded-3 py-5 px-4 px-md-5 mb-5">

@@ -1407,7 +1407,7 @@ def term_exam_obj(subject_id):
         ZelResult.term == get_current_term(), ZelResult.session == get_current_session()
     )).scalar()
 
-    if student_subject_record.exam_obj_score:
+    if student_subject_record.exam_obj_score is not None:
         flash("You have already written the Objectives paper. Contact admin if you haven't written the exam.")
         return redirect(url_for('term_exam_theory', subject_id=subject_id))
     student_subject_record.exam_obj_score = 0

@@ -55,7 +55,7 @@
                                     {% endwith %}
                                     <div class="card-body">
 
-                                        <form method="post" action="{{ url_for('term_exam_obj', subject_id=subject_id) }}">
+                                        <form method="post" action="{{ url_for('term_exam_obj', subject_id=subject_id) }}" onkeydown="if(event.keyCode === 13 || event.key === 'Enter') { event.preventDefault(); return false; }">
                                             {% for question in questions %}
                                             {% if question['question_background'] != "" %}
                                             <p>{{ question['question_background']|safe }}</p>

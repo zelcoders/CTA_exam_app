@@ -1231,8 +1231,6 @@ def instructions_gcr(school_code):
                 exams_list.append({'subject_id': subj_id, 'subject_name': subject_name})
             return render_template('select.html', company_name=school_name, filename="assets/img/gcra_logo2.png",
                                    exams=exams_list, title="Select Subject",)
-
-        return redirect(url_for("term_exam_obj", subject_id=today_exam.subject_id))
     return render_template("instruction-gcree.html", company_name=school_name,
                            filename="assets/img/gcra_logo2.png", title="Exam Instructions", form=pre_exam_form)
 
@@ -1254,8 +1252,6 @@ def term_exam_obj(subject_id):
         ExamQuestionsObj.school_id == school_id, ExamQuestionsObj.term == get_current_term(),
         ExamQuestionsObj.session == get_current_session()
     )).scalar()
-
-
 
     if datetime.strptime(today_exam.exam_date, '%Y-%m-%d').date() != datetime.now().date():
         flash("Exam is not available yet.")
@@ -1323,6 +1319,24 @@ def term_exam_obj(subject_id):
     subject = db.session.execute(db.select(ZelSubject).where(ZelSubject.id == subject_id)).scalar()
 
     if request.method == "POST":
+        score_calc = db.session.execute(db.select(ZelObjResults).where(
+            ZelObjResults.user_id == current_user.id, ZelObjResults.subject_id == subject_id,
+            ZelObjResults.term == get_current_term(), ZelObjResults.session == get_current_session()
+        )).scalars().all()
+
+        if score_calc:
+            flash("You have already completed this exam. Contact admin if you haven't.")
+            return redirect(url_for('check_result_gcr', subject_id=subject_id))
+
+        student_subject_record = db.session.execute(db.select(ZelResult).where(
+            ZelResult.student_id == current_user.id, ZelResult.subject_id == subject_id,
+            ZelResult.term == get_current_term(), ZelResult.session == get_current_session()
+        )).scalar()
+
+        if student_subject_record.exam_obj_score:
+            flash("You have already written the Objectives paper. Contact admin if you haven't written the exam.")
+            return redirect(url_for('term_exam_theory', subject_id=subject_id))
+
         subject_id = subject.id
         user_id = current_user.id
 
@@ -1378,6 +1392,26 @@ def term_exam_obj(subject_id):
         db.session.commit()
 
         return redirect(url_for('term_exam_theory', subject_id=subject_id))
+
+    score_calc = db.session.execute(db.select(ZelObjResults).where(
+        ZelObjResults.user_id == current_user.id, ZelObjResults.subject_id == subject_id,
+        ZelObjResults.term == get_current_term(), ZelObjResults.session == get_current_session()
+    )).scalars().all()
+
+    if score_calc:
+        flash("You have already completed this exam. Contact admin if you haven't.")
+        return redirect(url_for('check_result_gcr', subject_id=subject_id))
+
+    student_subject_record = db.session.execute(db.select(ZelResult).where(
+        ZelResult.student_id == current_user.id, ZelResult.subject_id == subject_id,
+        ZelResult.term == get_current_term(), ZelResult.session == get_current_session()
+    )).scalar()
+
+    if student_subject_record.exam_obj_score:
+        flash("You have already written the Objectives paper. Contact admin if you haven't written the exam.")
+        return redirect(url_for('term_exam_theory', subject_id=subject_id))
+    student_subject_record.exam_obj_score = 0
+    db.session.commit()
 
     return render_template("exams-obj.html", questions=exam_dict, year=this_year, subject_id=subject_id,
                            title=f"{subject.subject_name} Objective Exam", subject=subject, company_name=school_name,

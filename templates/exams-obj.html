@@ -62,7 +62,11 @@
                                             {% endif %}
                                             <p>{{ question['question_no'] }}. {{ question['question']|safe }}</p>
                                             {% for option in question['options'] %}
+                                            {% if subject_id == 1 %}
+                                            <input type="radio" name="question_{{ question['question_no'] }}" value="{{ option|safe }}">{{ option|safe }}<br>
+                                            {% else %}
                                             <input type="radio" name="question_{{ question['question_no'] }}" value="{{ option|striptags }}">{{ option|safe }}<br>
+                                            {% endif %}
                                             {% endfor %}
                                             <br><br>
                                             {% endfor %}

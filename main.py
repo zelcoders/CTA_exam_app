@@ -1451,7 +1451,7 @@ def term_exam_theory(subject_id):
 
     subject = db.session.execute(db.select(ZelSubject).where(ZelSubject.id == subject_id)).scalar()
 
-    return render_template("exams-theory.html", question=question, year=this_year, subject_id=subject_id,
+    return render_template("exams-theory.html", question=question, year=this_year, subject_id=int(subject_id),
                            title=f"{subject.subject_name} Theory Exam", subject=subject, company_name=school_name,
                            filename="assets/img/gcra_logo2.png", exam_duration=exam_duration, exam_weight=exam_weight)
 

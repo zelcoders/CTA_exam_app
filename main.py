@@ -1,3 +1,4 @@
+import html
 from datetime import datetime
 import random
 import pandas as pd
@@ -1361,7 +1362,7 @@ def term_exam_obj(subject_id):
             new_result.subject_id = subject_id
             new_result.question_id = question_id
             new_result.selected_answer = selected_answer
-            new_result.correct_answer = re.sub(r"<.*?>", "", correct_option)
+            new_result.correct_answer = html.unescape(re.sub(r"<.*?>", "", correct_option))
             new_result.term = get_current_term()
             new_result.session = get_current_session()
             new_result.classroom_id = current_user.classroom_id

@@ -67,8 +67,8 @@
                                 {% for result in results: %}
                                 <p><span style="font-style:italic;"><strong>Question: {{ result.question.question|safe }}</strong></span><br>
                                   <strong>{% if result.selected_answer == result.correct_answer %} <span style="color:green">Correct</span> {% else: %} <span style="color:red">Incorrect</span> {% endif %}</strong>
-                                <br><small>You selected - {{ result.selected_answer }}
-                                <br>Correct Answer - {{ result.correct_answer }}</small></p>
+                                <br><small>You selected - {{ result.selected_answer|safe }}
+                                <br>Correct Answer - {{ result.correct_answer|safe }}</small></p>
 
                                 {% endfor %}
 

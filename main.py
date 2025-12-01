@@ -1486,7 +1486,7 @@ def check_result_gcr():
 
     company_name = current_user.school.name
 
-    return render_template("check_result.html", title="Entrance Exam Results", company_name=company_name,
+    return render_template("check_result.html", title="Exam Results", company_name=company_name,
                            results=score_calc, score=f'{student_score}', filename="assets/img/gcra_logo2.png")
 
 

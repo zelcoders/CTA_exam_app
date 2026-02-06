@@ -1408,10 +1408,26 @@ def term_exam_obj(subject_id):
         ZelResult.term == get_current_term(), ZelResult.session == get_current_session()
     )).scalar()
 
-    if student_subject_record.exam_obj_score is not None:
-        flash("You have already written the Objectives paper. Contact admin if you haven't written the exam.")
-        return redirect(url_for('term_exam_theory', subject_id=subject_id))
-    student_subject_record.exam_obj_score = 0
+    if student_subject_record:
+        if student_subject_record.exam_obj_score is not None:
+            flash("You have already written the Objectives paper. Contact admin if you haven't written the exam.")
+            return redirect(url_for('term_exam_theory', subject_id=subject_id))
+        student_subject_record.exam_obj_score = 0
+    else:
+        new_score = ZelResult()
+        new_score.student_id = current_user.id
+        new_score.subject_id = subject_id
+        new_score.classroom = current_user.classroom.class_name
+        new_score.term = "Second"
+        new_score.session = "2025/26"
+        new_score.school_id = current_user.school_id
+        new_score.ca1 = 0
+        new_score.ca2 = 0
+        new_score.ca3 = 0
+        new_score.practical_score = 0
+        new_score.exam_obj_score = 0
+        new_score.adjusted_exam_obj_score = 0
+        new_score.exam_theory_score = 0
     db.session.commit()
 
     return render_template("exams-obj.html", questions=exam_dict, year=this_year, subject_id=subject_id,

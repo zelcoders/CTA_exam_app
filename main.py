@@ -1428,6 +1428,7 @@ def term_exam_obj(subject_id):
         new_score.exam_obj_score = 0
         new_score.adjusted_exam_obj_score = 0
         new_score.exam_theory_score = 0
+        db.session.add(new_score)
     db.session.commit()
 
     return render_template("exams-obj.html", questions=exam_dict, year=this_year, subject_id=subject_id,

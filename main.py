@@ -573,6 +573,7 @@ class ExamQuestionsObj(db.Model):
     exam_time: Mapped[str] = mapped_column(String(50), nullable=False)
     duration: Mapped[int] = mapped_column(Integer, nullable=False)
     weight: Mapped[int] = mapped_column(Integer, nullable=False)
+    exam_type: Mapped[str] = mapped_column(String(50), nullable=True)
 
 
 class ExamQuestionsTheory(db.Model):
@@ -588,6 +589,7 @@ class ExamQuestionsTheory(db.Model):
     exam_time: Mapped[str] = mapped_column(String(50), nullable=False)
     duration: Mapped[int] = mapped_column(Integer, nullable=False)
     weight: Mapped[int] = mapped_column(Integer, nullable=False)
+    exam_type: Mapped[str] = mapped_column(String(50), nullable=True)
 
 
 class QuestionPoolObj(db.Model):

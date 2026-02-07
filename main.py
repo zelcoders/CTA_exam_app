@@ -1,5 +1,5 @@
 import html
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 import pandas as pd
 import re
@@ -101,33 +101,55 @@ def my_login_required(f):
 
 def get_current_session():
     load_records = db.session.execute(db.select(ZelTermDefine).where(ZelTermDefine.school_id == current_user.school_id)).scalars().all()
+    today = datetime.now().date()
     if not load_records:
         return ""
     for rec in load_records:
         start_date = datetime.strptime(rec.start_date, '%Y-%m-%d').date()
         end_date = datetime.strptime(rec.end_date, '%Y-%m-%d').date()
-        today = datetime.now().date()
+
         if start_date <= today <= end_date:
             current_session = rec.session
             return current_session
 
-    return load_records[-1].session
+    if datetime.strptime(load_records[-1].end_date, '%Y-%m-%d').date() < today and today - datetime.strptime(
+            load_records[-1].end_date, '%Y-%m-%d').date() < timedelta(days=60):
+        return load_records[-1].session
+    elif datetime.strptime(load_records[-1].start_date, '%Y-%m-%d').date() > today and datetime.strptime(
+            load_records[-1].start_date, '%Y-%m-%d').date() - today > timedelta(days=7):
+        return load_records[-2].session
+    elif datetime.strptime(load_records[-1].start_date, '%Y-%m-%d').date() > today and datetime.strptime(
+            load_records[-1].start_date, '%Y-%m-%d').date() - today <= timedelta(days=7):
+        return load_records[-1].session
+    else:
+        return '2000/01'
 
 
 def get_current_term():
     load_records = db.session.execute(
         db.select(ZelTermDefine).where(ZelTermDefine.school_id == current_user.school_id)).scalars().all()
+    today = datetime.now().date()
     if not load_records:
         return ""
     for rec in load_records:
         start_date = datetime.strptime(rec.start_date, '%Y-%m-%d').date()
         end_date = datetime.strptime(rec.end_date, '%Y-%m-%d').date()
-        today = datetime.now().date()
+
         if start_date <= today <= end_date:
             current_term = rec.term
             return current_term
 
-    return load_records[-1].term
+    if datetime.strptime(load_records[-1].end_date, '%Y-%m-%d').date() < today and today - datetime.strptime(
+            load_records[-1].end_date, '%Y-%m-%d').date() < timedelta(days=60):
+        return load_records[-1].term
+    elif datetime.strptime(load_records[-1].start_date, '%Y-%m-%d').date() > today and datetime.strptime(
+            load_records[-1].start_date, '%Y-%m-%d').date() - today > timedelta(days=7):
+        return load_records[-2].term
+    elif datetime.strptime(load_records[-1].start_date, '%Y-%m-%d').date() > today and datetime.strptime(
+            load_records[-1].start_date, '%Y-%m-%d').date() - today <= timedelta(days=7):
+        return load_records[-1].term
+    else:
+        return 'No valid term'
 
 
 # CREATE TABLE
@@ -1418,8 +1440,8 @@ def term_exam_obj(subject_id):
         new_score.student_id = current_user.id
         new_score.subject_id = subject_id
         new_score.classroom = current_user.classroom.class_name
-        new_score.term = "Second"
-        new_score.session = "2025/26"
+        new_score.term = get_current_term()
+        new_score.session = get_current_session()
         new_score.school_id = current_user.school_id
         new_score.ca1 = 0
         new_score.ca2 = 0
